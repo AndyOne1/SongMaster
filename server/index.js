@@ -159,6 +159,19 @@ app.post('/api/generate-batch', async (req, res) => {
   }
 })
 
+// Catch-all: Return error for non-API routes (frontend is on Netlify)
+app.use((req, res) => {
+  if (!req.path.startsWith('/api')) {
+    res.status(404).json({
+      error: 'Not Found',
+      message: 'This is the SongMaster API. The frontend is at https://songmaster.netlify.app',
+      endpoints: ['/api/health', '/api/generate', '/api/generate-artist', '/api/orchestrate']
+    })
+    return
+  }
+  res.status(404).json({ error: 'Endpoint not found' })
+})
+
 const PORT = process.env.PORT || 3001
 const HOST = process.env.HOST || '0.0.0.0'
 
