@@ -22,6 +22,7 @@ interface AIAgent {
   id: string
   name: string
   provider: string
+  model_name: string
 }
 
 export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
@@ -30,7 +31,7 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
   const [generating, setGenerating] = useState(false)
   const [generatedOptions, setGeneratedOptions] = useState<Artist[]>([])
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
-  const [selectedAgent] = useState<AIAgent>({ id: '1', name: 'Grok', provider: 'xAI' })
+  const [selectedAgent] = useState<AIAgent>({ id: 'gen-6', name: 'Grok', provider: 'xAI', model_name: 'x-ai/grok-4.1-fast' })
 
   // Manual form state
   const [manualForm, setManualForm] = useState({
@@ -48,7 +49,7 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
       const response = await fetch(`${BACKEND_URL}/api/generate-artist`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input, agent_id: selectedAgent.id }),
+        body: JSON.stringify({ input, model_name: selectedAgent.model_name }),
       })
       const data = await response.json()
       setGeneratedOptions(data.options || [])

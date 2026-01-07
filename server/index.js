@@ -65,6 +65,8 @@ app.post('/api/generate', async (req, res) => {
 app.post('/api/generate-artist', async (req, res) => {
   const { input, model_name } = req.body
 
+  console.log('Artist generation request:', { input, model_name })
+
   try {
     const result = await callOpenRouter(
       model_name || 'anthropic/claude-sonnet-4.5',
