@@ -165,6 +165,12 @@ const PORT = process.env.PORT || 3001
 console.log('Starting SongMaster API...')
 console.log('OPENROUTER_API_KEY set:', !!process.env.OPENROUTER_API_KEY)
 console.log('PORT:', PORT)
+console.log('NODE_ENV:', process.env.NODE_ENV)
+
+// Wait a bit for Railway healthcheck to be ready
+setTimeout(() => {
+  console.log('Server ready, listening on port', PORT)
+}, 1000)
 
 try {
   app.listen(PORT, () => {

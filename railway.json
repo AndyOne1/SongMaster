@@ -9,6 +9,8 @@
   "deploy": {
     "startCommand": "node server/index.js",
     "healthcheckPath": "/api/health",
-    "healthcheckTimeout": 30
+    "healthcheckTimeout": 60,
+    "restartPolicy": "on-failure",
+    "restartPolicyMaxRetries": 3
   }
 }
