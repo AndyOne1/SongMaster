@@ -74,15 +74,15 @@ export function AgentTile({ agent, status, scores, onClick }: AgentTileProps) {
           ].map(({ label, value }) => (
             <div key={label} className="flex items-center justify-between text-sm">
               <span className="text-gray-400">{label}</span>
-              <span className={cn('rounded px-2 py-0.5 text-xs font-medium border', getScoreClass(value))}>
-                {value}/10
+              <span className={cn('rounded px-2 py-0.5 text-xs font-medium border', getScoreClass(value || 0))}>
+                {(value || 0)}/10
               </span>
             </div>
           ))}
           <div className="flex items-center justify-between border-t border-gray-700 pt-2 text-sm">
             <span className="font-medium text-gray-300">Total Score</span>
-            <span className={cn('rounded px-2 py-0.5 text-sm font-bold border', getScoreClass(scores.total))}>
-              {scores.total.toFixed(1)}/10
+            <span className={cn('rounded px-2 py-0.5 text-sm font-bold border', getScoreClass(scores.total || 0))}>
+              {(scores.total || 0).toFixed(1)}/10
             </span>
           </div>
         </div>

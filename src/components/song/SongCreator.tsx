@@ -278,8 +278,9 @@ Create an original song specification. Return JSON with:
           {/* Agent Tiles */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {selectedAgents.map((agentId) => {
-              const agent = agents.find(a => a.id === agentId)!
-              const status = agentStatuses[agentId] as any
+              const agent = agents.find(a => a.id === agentId)
+              if (!agent) return null // Skip if agent not loaded yet
+              const status = agentStatuses[agentId] || 'waiting'
               const scores = generationResults[agentId]?.scores
 
               return (
