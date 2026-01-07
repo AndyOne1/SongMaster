@@ -160,6 +160,17 @@ app.post('/api/generate-batch', async (req, res) => {
 })
 
 const PORT = process.env.PORT || 3001
-app.listen(PORT, () => {
-  console.log(`SongMaster API running on port ${PORT}`)
-})
+
+// Log startup info
+console.log('Starting SongMaster API...')
+console.log('OPENROUTER_API_KEY set:', !!process.env.OPENROUTER_API_KEY)
+console.log('PORT:', PORT)
+
+try {
+  app.listen(PORT, () => {
+    console.log(`SongMaster API running on port ${PORT}`)
+  })
+} catch (error) {
+  console.error('Failed to start server:', error)
+  process.exit(1)
+}
