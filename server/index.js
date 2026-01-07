@@ -2,27 +2,7 @@ import express from 'express'
 import cors from 'cors'
 
 const app = express()
-
-// Configure CORS to allow multiple origins
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://songmaster.netlify.app',
-  'https://*.netlify.app',
-  'https://*.railway.app',
-]
-
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true)
-    if (allowedOrigins.some(o => origin === o || origin.endsWith(o.replace('*', '')))) {
-      return callback(null, true)
-    }
-    return callback(null, false)
-  },
-  credentials: true,
-}))
+app.use(cors())
 app.use(express.json())
 
 // Helper function to call OpenRouter
