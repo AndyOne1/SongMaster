@@ -3,8 +3,11 @@ import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Toggle } from '../components/ui/Toggle'
+import { PromptEditor } from '../components/settings/PromptEditor'
+import { useIsAdmin } from '../hooks/useIsAdmin'
 
 export function Settings() {
+  const { isAdmin, loading: adminLoading } = useIsAdmin()
   const [settings, setSettings] = useState({
     defaultIterations: 3,
     autoIterate: false,
@@ -13,6 +16,10 @@ export function Settings() {
     orchestratorMasterPrompt: '',
     artistCreatorMasterPrompt: '',
   })
+
+  if (adminLoading) {
+    return <div className="flex items-center justify-center py-12">Loading settings...</div>
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -89,6 +96,17 @@ export function Settings() {
           </div>
         )}
       </Card>
+
+      {/* Admin-only System Prompts Section */}
+      {isAdmin && (
+        <Card className="mb-6 border-primary-500/30">
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-gray-200">System Master Prompts</h2>
+            <p className="text-sm text-gray-500">Admin-only: Edit the default prompts used by all users</p>
+          </div>
+          <PromptEditor />
+        </Card>
+      )}
 
       <div className="flex justify-end gap-3">
         <Button variant="outline" onClick={() => setSettings({

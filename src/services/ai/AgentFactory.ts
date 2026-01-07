@@ -1,4 +1,5 @@
 import { Agent, AgentOutput } from '../../types'
+import { promptService } from '../prompts/PromptService'
 
 interface GenerationParams {
   agent: Agent
@@ -13,7 +14,7 @@ interface GenerationParams {
   iterationFeedback?: string
 }
 
-const DEFAULT_PROMPT = `You are a professional songwriter. Create an original song specification.
+const FALLBACK_PROMPT = `You are a professional songwriter. Create an original song specification.
 
 # Context
 - Artist Style: {artist_context}
@@ -31,8 +32,15 @@ Return a JSON object with:
 Create a unique, creative song that matches the description.`
 
 export class AgentFactory {
-  static createPrompt(params: GenerationParams): string {
-    let prompt = DEFAULT_PROMPT
+  static async getDefaultPrompt(): Promise<string> {
+    const dbPrompt = await promptService.getPrompt('song_generation')
+    if (dbPrompt) return dbPrompt
+    return FALLBACK_PROMPT
+  }
+
+  static async createPrompt(params: GenerationParams): Promise<string> {
+    const defaultPrompt = await this.getDefaultPrompt()
+    let prompt = defaultPrompt
       .replace('{artist_context}', params.artistContext
         ? `${params.artistContext.name} - ${params.artistContext.style_description}${params.artistContext.special_characteristics ? ` (Special: ${params.artistContext.special_characteristics})` : ''}`
         : 'No specific artist context')
@@ -55,7 +63,7 @@ ${params.iterationFeedback}`
   }
 
   static async generate(params: GenerationParams): Promise<AgentOutput> {
-    const prompt = this.createPrompt(params)
+    const prompt = await this.createPrompt(params)
 
     // Call the appropriate API based on provider
     switch (params.agent.provider) {
@@ -65,6 +73,8 @@ ${params.iterationFeedback}`
         return this.callOpenAI(params.agent, prompt)
       case 'xAI':
         return this.callXAI(params.agent, prompt)
+      case 'OpenRouter':
+        return this.callOpenRouter(params.agent, prompt)
       default:
         throw new Error(`Unsupported provider: ${params.agent.provider}`)
     }
@@ -120,6 +130,36 @@ ${params.iterationFeedback}`
         max_tokens: agent.capabilities.max_output || 4000,
       }),
     })
+
+    const data = await response.json()
+    return this.parseOutput(data.choices?.[0]?.message?.content || '')
+  }
+
+  private static async callOpenRouter(agent: Agent, prompt: string): Promise<AgentOutput> {
+    const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY
+    if (!apiKey) {
+      throw new Error('OpenRouter API key not configured. Set VITE_OPENROUTER_API_KEY in .env')
+    }
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': window.location.origin || 'http://localhost:5173',
+        'X-Title': 'SongMaster',
+      },
+      body: JSON.stringify({
+        model: agent.model_name,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: agent.capabilities.max_output || 4000,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(`OpenRouter API error: ${error.error?.message || response.statusText}`)
+    }
 
     const data = await response.json()
     return this.parseOutput(data.choices?.[0]?.message?.content || '')

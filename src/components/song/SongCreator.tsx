@@ -33,42 +33,95 @@ export function SongCreator() {
   }, [artistId])
 
   const loadAgents = async () => {
-    // Demo agents for testing
+    // Demo agents for testing - OpenRouter models
     const demoAgents: Agent[] = [
+      // Orchestrators (for evaluation)
       {
-        id: '1',
-        name: 'Claude',
-        provider: 'Anthropic',
-        api_endpoint: 'https://api.anthropic.com',
-        model_name: 'claude-sonnet-4',
-        capabilities: { context_window: 200000 },
+        id: 'orch-1',
+        name: 'GPT-5.2 Orchestrator',
+        provider: 'OpenRouter',
+        api_endpoint: 'https://openrouter.ai/api/v1',
+        model_name: 'openai/gpt-5.2',
+        capabilities: { context_window: 200000, max_output: 4000 },
         cost_per_1k_tokens: 0.01,
         is_active: true,
       },
       {
-        id: '2',
-        name: 'GPT-4o',
-        provider: 'OpenAI',
-        api_endpoint: 'https://api.openai.com',
-        model_name: 'gpt-4o',
-        capabilities: { context_window: 128000 },
-        cost_per_1k_tokens: 0.03,
+        id: 'orch-2',
+        name: 'Claude-Sonnet-4.5 Orchestrator',
+        provider: 'OpenRouter',
+        api_endpoint: 'https://openrouter.ai/api/v1',
+        model_name: 'anthropic/claude-sonnet-4-5',
+        capabilities: { context_window: 200000, max_output: 4000 },
+        cost_per_1k_tokens: 0.01,
+        is_active: true,
+      },
+      // Generators
+      {
+        id: 'gen-1',
+        name: 'Xiaomi Mimo v2 Flash',
+        provider: 'OpenRouter',
+        api_endpoint: 'https://openrouter.ai/api/v1',
+        model_name: 'xiaomi/mimo-v2-flash:free',
+        capabilities: { context_window: 16384, max_output: 2000 },
+        cost_per_1k_tokens: 0,
         is_active: true,
       },
       {
-        id: '3',
-        name: 'Grok',
-        provider: 'xAI',
-        api_endpoint: 'https://api.x.ai',
-        model_name: 'grok-2-1212',
-        capabilities: { context_window: 131072 },
-        cost_per_1k_tokens: 0.02,
+        id: 'gen-2',
+        name: 'Z-AI GLM-4.7',
+        provider: 'OpenRouter',
+        api_endpoint: 'https://openrouter.ai/api/v1',
+        model_name: 'z-ai/glm-4.7',
+        capabilities: { context_window: 128000, max_output: 4000 },
+        cost_per_1k_tokens: 0.005,
+        is_active: true,
+      },
+      {
+        id: 'gen-3',
+        name: 'MiniMax M2.1',
+        provider: 'OpenRouter',
+        api_endpoint: 'https://openrouter.ai/api/v1',
+        model_name: 'minimax/minimax-m2.1',
+        capabilities: { context_window: 32768, max_output: 4000 },
+        cost_per_1k_tokens: 0.002,
+        is_active: true,
+      },
+      {
+        id: 'gen-4',
+        name: 'Google Gemini 3 Flash',
+        provider: 'OpenRouter',
+        api_endpoint: 'https://openrouter.ai/api/v1',
+        model_name: 'google/gemini-3-flash-preview',
+        capabilities: { context_window: 1048576, max_output: 4000 },
+        cost_per_1k_tokens: 0.001,
+        is_active: true,
+      },
+      {
+        id: 'gen-5',
+        name: 'DeepSeek V3.2',
+        provider: 'OpenRouter',
+        api_endpoint: 'https://openrouter.ai/api/v1',
+        model_name: 'deepseek/deepseek-v3.2',
+        capabilities: { context_window: 65536, max_output: 4000 },
+        cost_per_1k_tokens: 0.002,
+        is_active: true,
+      },
+      {
+        id: 'gen-6',
+        name: 'xAI Grok 4.1 Fast',
+        provider: 'OpenRouter',
+        api_endpoint: 'https://openrouter.ai/api/v1',
+        model_name: 'x-ai/grok-4.1-fast',
+        capabilities: { context_window: 131072, max_output: 4000 },
+        cost_per_1k_tokens: 0.005,
         is_active: true,
       },
     ]
     setAgents(demoAgents)
     if (selectedAgents.length === 0) {
-      setSelectedAgents(demoAgents.slice(0, 2).map(a => a.id))
+      // Select two generators by default
+      setSelectedAgents([demoAgents[2].id, demoAgents[3].id])
     }
   }
 

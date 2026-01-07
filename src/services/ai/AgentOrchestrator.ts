@@ -1,5 +1,6 @@
 import { Agent, AgentOutput } from '../../types'
 import { AgentFactory } from './AgentFactory'
+import { promptService } from '../prompts/PromptService'
 
 interface OrchestratorParams {
   songs: Record<string, AgentOutput>
@@ -18,7 +19,7 @@ interface OrchestratorResult {
   winnerAgentId: string
 }
 
-const DEFAULT_ORCHESTRATOR_PROMPT = `You are an expert music producer. Evaluate these song specifications and score them.
+const FALLBACK_ORCHESTRATOR_PROMPT = `You are an expert music producer. Evaluate these song specifications and score them.
 
 # Songs to Evaluate
 {songs}
@@ -46,7 +47,10 @@ Style: ${song.style_description}
 Lyrics: ${song.lyrics.substring(0, 500)}...`
   }).join('\n\n---\n\n')
 
-  let prompt = DEFAULT_ORCHESTRATOR_PROMPT.replace('{songs}', songsSummary)
+  // Fetch orchestrator prompt from database, fallback to hardcoded
+  const dbPrompt = await promptService.getPrompt('orchestrator')
+  let basePrompt = dbPrompt || FALLBACK_ORCHESTRATOR_PROMPT
+  let prompt = basePrompt.replace('{songs}', songsSummary)
   if (params.masterPrompt) {
     prompt = params.masterPrompt + '\n\n' + prompt
   }
