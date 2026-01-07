@@ -2,6 +2,9 @@ import { Agent, AgentOutput } from '../../types'
 import { AgentFactory } from './AgentFactory'
 import { promptService } from '../prompts/PromptService'
 
+// Backend URL - set via environment variable for production
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+
 interface OrchestratorParams {
   songs: Record<string, AgentOutput>
   masterPrompt?: string
@@ -57,7 +60,7 @@ Lyrics: ${song.lyrics.substring(0, 500)}...`
 
   // Call orchestrator API (uses backend for actual AI calls)
   try {
-    const response = await fetch('/api/orchestrate', {
+    const response = await fetch(`${BACKEND_URL}/api/orchestrate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt, songs: params.songs }),

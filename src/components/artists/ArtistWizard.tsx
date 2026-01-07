@@ -7,6 +7,9 @@ import { Card } from '../ui/Card'
 import { Wand2, Edit3, Loader2, Check } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
+// Backend URL - set via environment variable for production
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+
 interface ArtistWizardProps {
   artist?: Artist | null
   onClose: () => void
@@ -42,7 +45,7 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
     setGenerating(true)
     try {
       // Call API to generate artist options
-      const response = await fetch('/api/generate-artist', {
+      const response = await fetch(`${BACKEND_URL}/api/generate-artist`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input, agent_id: selectedAgent.id }),

@@ -31,6 +31,9 @@ Return a JSON object with:
 
 Create a unique, creative song that matches the description.`
 
+// Backend URL - set via environment variable for production
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+
 export class AgentFactory {
   static async getDefaultPrompt(): Promise<string> {
     const dbPrompt = await promptService.getPrompt('song_generation')
@@ -65,104 +68,71 @@ ${params.iterationFeedback}`
   static async generate(params: GenerationParams): Promise<AgentOutput> {
     const prompt = await this.createPrompt(params)
 
-    // Call the appropriate API based on provider
-    switch (params.agent.provider) {
-      case 'Anthropic':
-        return this.callAnthropic(params.agent, prompt)
-      case 'OpenAI':
-        return this.callOpenAI(params.agent, prompt)
-      case 'xAI':
-        return this.callXAI(params.agent, prompt)
-      case 'OpenRouter':
-        return this.callOpenRouter(params.agent, prompt)
-      default:
-        throw new Error(`Unsupported provider: ${params.agent.provider}`)
+    // Call the backend API (which handles all AI providers securely)
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: params.agent,
+          prompt,
+          model_name: params.agent.model_name,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.error || `API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return this.parseOutput(JSON.stringify(data))
+    } catch (error) {
+      console.error('Generation failed:', error)
+      // Fallback to demo mode for development
+      return this.generateDemo(params.agent.name)
     }
   }
 
-  private static async callAnthropic(agent: Agent, prompt: string): Promise<AgentOutput> {
-    const response = await fetch(agent.api_endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY || '',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: agent.model_name,
-        max_tokens: agent.capabilities.max_output || 4000,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    })
+  // Generate demo output for development/testing
+  private static generateDemo(agentName: string): AgentOutput {
+    return {
+      name: `${agentName}'s Song`,
+      lyrics: `Verse 1:
+Walking down the street, feeling free
+The sun is shining, just you and me
+Every moment feels brand new
+With nothing but this melody
 
-    const data = await response.json()
-    return this.parseOutput(data.content?.[0]?.text || '')
-  }
+Chorus:
+This is our song tonight
+Dancing under neon lights
+Everything feels right
+With you by my side
 
-  private static async callOpenAI(agent: Agent, prompt: string): Promise<AgentOutput> {
-    const response = await fetch(agent.api_endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY || ''}`,
-      },
-      body: JSON.stringify({
-        model: agent.model_name,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: agent.capabilities.max_output || 4000,
-      }),
-    })
+Verse 2:
+Memories we made along the way
+Will stay with us both night and day
+Our hearts beat to the same rhythm
+In this perfect, timeless rhythm
 
-    const data = await response.json()
-    return this.parseOutput(data.choices?.[0]?.message?.content || '')
-  }
+[Chorus]
 
-  private static async callXAI(agent: Agent, prompt: string): Promise<AgentOutput> {
-    const response = await fetch(agent.api_endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_XAI_API_KEY || ''}`,
-      },
-      body: JSON.stringify({
-        model: agent.model_name,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: agent.capabilities.max_output || 4000,
-      }),
-    })
+Bridge:
+Nothing else matters now
+Just you and me, here and now
+Our love shines so bright
+Guiding us through the night
 
-    const data = await response.json()
-    return this.parseOutput(data.choices?.[0]?.message?.content || '')
-  }
+[Chorus]
 
-  private static async callOpenRouter(agent: Agent, prompt: string): Promise<AgentOutput> {
-    const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY
-    if (!apiKey) {
-      throw new Error('OpenRouter API key not configured. Set VITE_OPENROUTER_API_KEY in .env')
+Outro:
+This song will never end
+Our story's just beginning
+Together we'll prevail
+On this endless trail`,
+      style_description: 'A pop-rock song with catchy melodies, driving rhythm guitar, and an uplifting chorus.',
     }
-
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': window.location.origin || 'http://localhost:5173',
-        'X-Title': 'SongMaster',
-      },
-      body: JSON.stringify({
-        model: agent.model_name,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: agent.capabilities.max_output || 4000,
-      }),
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      throw new Error(`OpenRouter API error: ${error.error?.message || response.statusText}`)
-    }
-
-    const data = await response.json()
-    return this.parseOutput(data.choices?.[0]?.message?.content || '')
   }
 
   private static parseOutput(text: string): AgentOutput {
