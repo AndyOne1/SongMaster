@@ -1,9 +1,24 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Layout } from './components/layout/Layout'
+import { Home } from './pages/Home'
+import { Artists } from './pages/Artists'
+import { SongCreatorPage } from './pages/SongCreator'
+import { Library } from './pages/Library'
+import { Settings } from './pages/Settings'
+
 function App() {
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
-      <h1 className="text-3xl font-bold text-center py-8">SongMaster</h1>
-      <p className="text-center text-gray-500">AI Song Creator - Setup Complete</p>
-    </div>
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/artists" element={<Artists />} />
+          <Route path="/songs/new" element={<SongCreatorPage />} />
+          <Route path="/library" element={<Library />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
   )
 }
 
