@@ -86,8 +86,8 @@ ON CONFLICT (key) DO NOTHING;
 
 -- Insert OpenRouter agents (won't overwrite if id exists)
 INSERT INTO agents (id, name, provider, api_endpoint, model_name, capabilities, cost_per_1k_tokens, is_active) VALUES
-('orch-1', 'GPT-5.2 Orchestrator', 'OpenRouter', 'https://openrouter.ai/api/v1', 'openai/gpt-5.2', '{"context_window": 200000, "max_output": 4000}', 0.01, true),
-('orch-2', 'Claude-Sonnet-4.5 Orchestrator', 'OpenRouter', 'https://openrouter.ai/api/v1', 'anthropic/claude-sonnet-4-5', '{"context_window": 200000, "max_output": 4000}', 0.01, true),
+('orch-1', 'GPT-4o Orchestrator', 'OpenRouter', 'https://openrouter.ai/api/v1', 'openai/gpt-4o', '{"context_window": 200000, "max_output": 4000}', 0.01, true),
+('orch-2', 'Claude-Sonnet-4-20250514 Orchestrator', 'OpenRouter', 'https://openrouter.ai/api/v1', 'anthropic/claude-sonnet-4-20250514', '{"context_window": 200000, "max_output": 4000}', 0.01, true),
 ('gen-1', 'Xiaomi Mimo v2 Flash', 'OpenRouter', 'https://openrouter.ai/api/v1', 'xiaomi/mimo-v2-flash:free', '{"context_window": 16384, "max_output": 2000}', 0, true),
 ('gen-2', 'Z-AI GLM-4.7', 'OpenRouter', 'https://openrouter.ai/api/v1', 'z-ai/glm-4.7', '{"context_window": 128000, "max_output": 4000}', 0.005, true),
 ('gen-3', 'MiniMax M2.1', 'OpenRouter', 'https://openrouter.ai/api/v1', 'minimax/minimax-m2.1', '{"context_window": 32768, "max_output": 4000}', 0.002, true),
