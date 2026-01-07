@@ -17,6 +17,7 @@ export function SongCreator() {
   const [, setIterationCount] = useState(0)
 
   const [agents, setAgents] = useState<Agent[]>([])
+  const [loadingAgents, setLoadingAgents] = useState(true)
   const [selectedAgents, setSelectedAgents] = useState<string[]>([])
   const [artist, setArtist] = useState<Artist | null>(null)
   const [songDescription, setSongDescription] = useState('')
@@ -35,6 +36,7 @@ export function SongCreator() {
   }, [artistId])
 
   const loadAgents = async () => {
+    setLoadingAgents(true)
     const { data } = await supabase
       .from('agents')
       .select('*')
@@ -44,14 +46,18 @@ export function SongCreator() {
     if (data) {
       const fetchedAgents = data as Agent[]
       setAgents(fetchedAgents)
-      if (selectedAgents.length === 0 && fetchedAgents.length > 0) {
+      if (fetchedAgents.length > 0) {
         // Select two generators by default (skip orchestrators at index 0-1)
         const generators = fetchedAgents.filter(a => a.id.startsWith('gen-'))
         if (generators.length >= 2) {
           setSelectedAgents([generators[0].id, generators[1].id])
+        } else if (fetchedAgents.length >= 2) {
+          // Fallback: just take any two agents
+          setSelectedAgents([fetchedAgents[0].id, fetchedAgents[1].id])
         }
       }
     }
+    setLoadingAgents(false)
   }
 
   const loadArtist = async (id: string) => {
@@ -101,7 +107,14 @@ export function SongCreator() {
       const generationPromises = selectedAgents.map(async (agentId) => {
         setAgentStatuses(prev => ({ ...prev, [agentId]: 'generating' }))
 
-        const agent = agents.find(a => a.id === agentId)!
+        const agent = agents.find(a => a.id === agentId)
+        if (!agent) {
+          console.error(`Agent not found: ${agentId}`)
+          setAgentStatuses(prev => ({ ...prev, [agentId]: 'waiting' }))
+          return { agentId, result: null }
+        }
+
+        const modelName = agent.model_name || agentId
         const prompt = `You are a professional songwriter.
 
 Artist Context:
@@ -120,14 +133,15 @@ Create an original song specification. Return JSON with:
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              agent: { id: agentId, name: agent.name, model_name: agent.model_name },
+              agent: { id: agentId, name: agent.name, model_name: modelName },
               prompt,
-              model_name: agent.model_name,
+              model_name: modelName,
             }),
           })
 
           if (!response.ok) {
-            throw new Error(`Generation failed: ${response.status}`)
+            const errorText = await response.text()
+            throw new Error(`Generation failed: ${response.status} - ${errorText}`)
           }
 
           const data = await response.json()
@@ -216,44 +230,52 @@ Create an original song specification. Return JSON with:
         </div>
       </div>
 
-      <Card className="mb-6">
-        <AgentSelector
-          agents={agents}
-          selectedAgents={selectedAgents}
-          onAddAgent={handleAddAgent}
-          onRemoveAgent={handleRemoveAgent}
-        />
-      </Card>
+      {loadingAgents ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-400"></div>
+        </div>
+      ) : (
+        <>
+          <Card className="mb-6">
+            <AgentSelector
+              agents={agents}
+              selectedAgents={selectedAgents}
+              onAddAgent={handleAddAgent}
+              onRemoveAgent={handleRemoveAgent}
+            />
+          </Card>
 
-      <Card className="mb-6">
-        <SongDescriptionInputs
-          artist={artist}
-          songDescription={songDescription}
-          styleDescription={styleDescription}
-          onSongDescriptionChange={setSongDescription}
-          onStyleDescriptionChange={setStyleDescription}
-        />
-      </Card>
+          <Card className="mb-6">
+            <SongDescriptionInputs
+              artist={artist}
+              songDescription={songDescription}
+              styleDescription={styleDescription}
+              onSongDescriptionChange={setSongDescription}
+              onStyleDescriptionChange={setStyleDescription}
+            />
+          </Card>
 
-      <div className="mb-6 flex justify-center">
-        <Button
-          size="lg"
-          onClick={handleGenerate}
-          disabled={generating || selectedAgents.length === 0}
-          className="px-8"
-        >
-          {generating ? (
-            <>
-              <span className="animate-spin">⏳</span> Generating...
-            </>
-          ) : (
-            <>
-              <Play className="mr-2 h-5 w-5" />
-              Generate Songs
-            </>
-          )}
-        </Button>
-      </div>
+          <div className="mb-6 flex justify-center">
+            <Button
+              size="lg"
+              onClick={handleGenerate}
+              disabled={generating || selectedAgents.length === 0}
+              className="px-8"
+            >
+              {generating ? (
+                <>
+                  <span className="animate-spin">⏳</span> Generating...
+                </>
+              ) : (
+                <>
+                  <Play className="mr-2 h-5 w-5" />
+                  Generate Songs
+                </>
+              )}
+            </Button>
+          </div>
+        </>
+      )}
 
       {/* Results */}
       {Object.keys(generationResults).length > 0 && (
