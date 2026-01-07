@@ -44,7 +44,7 @@ app.post('/api/generate', async (req, res) => {
 
   try {
     const result = await callOpenRouter(
-      model_name || 'claude-sonnet-4',
+      model_name || 'anthropic/claude-sonnet-4-5',
       [{ role: 'user', content: prompt }],
       { maxTokens: 4000 }
     )
@@ -61,7 +61,7 @@ app.post('/api/generate-artist', async (req, res) => {
 
   try {
     const result = await callOpenRouter(
-      model_name || 'claude-sonnet-4',
+      model_name || 'anthropic/claude-sonnet-4-5',
       [
         {
           role: 'system',
@@ -97,7 +97,7 @@ app.post('/api/orchestrate', async (req, res) => {
 
   try {
     const result = await callOpenRouter(
-      model_name || 'claude-sonnet-4',
+      model_name || 'anthropic/claude-sonnet-4-5',
       [
         {
           role: 'system',
