@@ -6,6 +6,7 @@ import { Input } from '../ui/Input'
 import { Card } from '../ui/Card'
 import { Wand2, Edit3, Loader2, Check } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { supabase } from '../../services/supabase/client'
 
 // Backend URL - set via environment variable for production
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -93,8 +94,25 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
       return
     }
 
-    // Demo save (no actual Supabase call without auth)
-    console.log('Saving artist:', manualForm)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      alert('Please sign in to save artists')
+      return
+    }
+
+    const { error } = await supabase.from('artists').insert({
+      user_id: user.id,
+      name: manualForm.name,
+      style_description: manualForm.style_description,
+      special_characteristics: manualForm.special_characteristics,
+    })
+
+    if (error) {
+      console.error('Failed to save artist:', error)
+      alert('Failed to save artist: ' + error.message)
+      return
+    }
+
     onSave()
   }
 
@@ -102,7 +120,26 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
     if (selectedOption === null || !generatedOptions[selectedOption]) return
 
     const selected = generatedOptions[selectedOption]
-    console.log('Saving generated artist:', selected)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      alert('Please sign in to save artists')
+      return
+    }
+
+    const { error } = await supabase.from('artists').insert({
+      user_id: user.id,
+      name: selected.name,
+      style_description: selected.style_description,
+      special_characteristics: selected.special_characteristics,
+    })
+
+    if (error) {
+      console.error('Failed to save artist:', error)
+      alert('Failed to save artist: ' + error.message)
+      return
+    }
+
     onSave()
   }
 
