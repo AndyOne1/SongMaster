@@ -29,7 +29,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppContent() {
-  const { user, session } = useAuth()
+  const { user } = useAuth()
 
   return (
     <Routes>

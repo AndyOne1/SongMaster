@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Music, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
 
 export function Register() {
-  const navigate = useNavigate()
   const { signUp } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
