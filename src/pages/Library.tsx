@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Song } from '../types'
 import { Card } from '../components/ui/Card'
 import { Music, Clock, Edit2 } from 'lucide-react'
+import { supabase } from '../services/supabase/client'
 
 export function Library() {
   const [songs, setSongs] = useState<Song[]>([])
@@ -12,16 +13,15 @@ export function Library() {
   }, [])
 
   const loadSongs = async () => {
-    // Demo empty state
-    setSongs([])
-    setLoading(false)
+    const { data } = await supabase
+      .from('songs')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-    // In production:
-    // const { data } = await supabase
-    //   .from('songs')
-    //   .select('*')
-    //   .order('created_at', { ascending: false })
-    // if (data) setSongs(data as Song[])
+    if (data) {
+      setSongs(data as Song[])
+    }
+    setLoading(false)
   }
 
   if (loading) {

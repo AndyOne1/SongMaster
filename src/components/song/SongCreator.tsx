@@ -7,10 +7,14 @@ import { SongDescriptionInputs } from './SongDescriptionInputs'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { Save, Play } from 'lucide-react'
+import { supabase } from '../../services/supabase/client'
+
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 export function SongCreator() {
   const [searchParams] = useSearchParams()
   const artistId = searchParams.get('artist_id')
+  const [, setIterationCount] = useState(0)
 
   const [agents, setAgents] = useState<Agent[]>([])
   const [selectedAgents, setSelectedAgents] = useState<string[]>([])
@@ -24,118 +28,43 @@ export function SongCreator() {
   const [generationResults, setGenerationResults] = useState<Record<string, any>>({})
   const [orchestratorResult, setOrchestratorResult] = useState<any>(null)
   const [selectedSong, setSelectedSong] = useState<string | null>(null)
-  // iterationCount kept for future use
-  const [, setIterationCount] = useState(0)
 
   useEffect(() => {
     loadAgents()
-    if (artistId) loadArtist()
+    if (artistId) loadArtist(artistId)
   }, [artistId])
 
   const loadAgents = async () => {
-    // Demo agents for testing - OpenRouter models
-    const demoAgents: Agent[] = [
-      // Orchestrators (for evaluation)
-      {
-        id: 'orch-1',
-        name: 'GPT-5.2 Orchestrator',
-        provider: 'OpenRouter',
-        api_endpoint: 'https://openrouter.ai/api/v1',
-        model_name: 'openai/gpt-5.2',
-        capabilities: { context_window: 200000, max_output: 4000 },
-        cost_per_1k_tokens: 0.01,
-        is_active: true,
-      },
-      {
-        id: 'orch-2',
-        name: 'Claude-Sonnet-4.5 Orchestrator',
-        provider: 'OpenRouter',
-        api_endpoint: 'https://openrouter.ai/api/v1',
-        model_name: 'anthropic/claude-sonnet-4-5',
-        capabilities: { context_window: 200000, max_output: 4000 },
-        cost_per_1k_tokens: 0.01,
-        is_active: true,
-      },
-      // Generators
-      {
-        id: 'gen-1',
-        name: 'Xiaomi Mimo v2 Flash',
-        provider: 'OpenRouter',
-        api_endpoint: 'https://openrouter.ai/api/v1',
-        model_name: 'xiaomi/mimo-v2-flash:free',
-        capabilities: { context_window: 16384, max_output: 2000 },
-        cost_per_1k_tokens: 0,
-        is_active: true,
-      },
-      {
-        id: 'gen-2',
-        name: 'Z-AI GLM-4.7',
-        provider: 'OpenRouter',
-        api_endpoint: 'https://openrouter.ai/api/v1',
-        model_name: 'z-ai/glm-4.7',
-        capabilities: { context_window: 128000, max_output: 4000 },
-        cost_per_1k_tokens: 0.005,
-        is_active: true,
-      },
-      {
-        id: 'gen-3',
-        name: 'MiniMax M2.1',
-        provider: 'OpenRouter',
-        api_endpoint: 'https://openrouter.ai/api/v1',
-        model_name: 'minimax/minimax-m2.1',
-        capabilities: { context_window: 32768, max_output: 4000 },
-        cost_per_1k_tokens: 0.002,
-        is_active: true,
-      },
-      {
-        id: 'gen-4',
-        name: 'Google Gemini 3 Flash',
-        provider: 'OpenRouter',
-        api_endpoint: 'https://openrouter.ai/api/v1',
-        model_name: 'google/gemini-3-flash-preview',
-        capabilities: { context_window: 1048576, max_output: 4000 },
-        cost_per_1k_tokens: 0.001,
-        is_active: true,
-      },
-      {
-        id: 'gen-5',
-        name: 'DeepSeek V3.2',
-        provider: 'OpenRouter',
-        api_endpoint: 'https://openrouter.ai/api/v1',
-        model_name: 'deepseek/deepseek-v3.2',
-        capabilities: { context_window: 65536, max_output: 4000 },
-        cost_per_1k_tokens: 0.002,
-        is_active: true,
-      },
-      {
-        id: 'gen-6',
-        name: 'xAI Grok 4.1 Fast',
-        provider: 'OpenRouter',
-        api_endpoint: 'https://openrouter.ai/api/v1',
-        model_name: 'x-ai/grok-4.1-fast',
-        capabilities: { context_window: 131072, max_output: 4000 },
-        cost_per_1k_tokens: 0.005,
-        is_active: true,
-      },
-    ]
-    setAgents(demoAgents)
-    if (selectedAgents.length === 0) {
-      // Select two generators by default
-      setSelectedAgents([demoAgents[2].id, demoAgents[3].id])
+    const { data } = await supabase
+      .from('agents')
+      .select('*')
+      .eq('is_active', true)
+      .order('name')
+
+    if (data) {
+      const fetchedAgents = data as Agent[]
+      setAgents(fetchedAgents)
+      if (selectedAgents.length === 0 && fetchedAgents.length > 0) {
+        // Select two generators by default (skip orchestrators at index 0-1)
+        const generators = fetchedAgents.filter(a => a.id.startsWith('gen-'))
+        if (generators.length >= 2) {
+          setSelectedAgents([generators[0].id, generators[1].id])
+        }
+      }
     }
   }
 
-  const loadArtist = async () => {
-    // Demo artist
-    setArtist({
-      id: 'demo-artist',
-      user_id: 'demo',
-      name: 'Neon Horizon',
-      style_description: 'Synthwave band with dreamy 80s aesthetics',
-      special_characteristics: 'Retro synth leads and driving basslines',
-      created_at: new Date(),
-    })
-    setStyleDescription('Synthwave band with dreamy 80s aesthetics')
+  const loadArtist = async (id: string) => {
+    const { data } = await supabase
+      .from('artists')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (data) {
+      setArtist(data as Artist)
+      setStyleDescription(data.style_description)
+    }
   }
 
   const handleAddAgent = (agentId: string) => {
@@ -163,38 +92,91 @@ export function SongCreator() {
     setSelectedSong(null)
 
     try {
-      // Simulate generation with demo data
-      for (const agentId of selectedAgents) {
-        await new Promise(resolve => setTimeout(resolve, 1500))
+      // Build the prompt
+      const artistContext = artist
+        ? `Artist: ${artist.name}\nStyle: ${artist.style_description}\nCharacteristics: ${artist.special_characteristics}`
+        : 'Create an original artist style'
+
+      // Generate songs from each selected agent in parallel
+      const generationPromises = selectedAgents.map(async (agentId) => {
         setAgentStatuses(prev => ({ ...prev, [agentId]: 'generating' }))
 
         const agent = agents.find(a => a.id === agentId)!
-        setGenerationResults(prev => ({
-          ...prev,
-          [agentId]: {
-            name: `${agent.name}'s Song`,
-            lyrics: 'Demo lyrics for the song...',
-            style_description: styleDescription,
-            scores: {
-              music_style: Math.floor(Math.random() * 3) + 7,
-              lyrics: Math.floor(Math.random() * 3) + 6,
-              originality: Math.floor(Math.random() * 3) + 5,
-              cohesion: Math.floor(Math.random() * 3) + 6,
+        const prompt = `You are a professional songwriter.
+
+Artist Context:
+${artistContext}
+
+Song Description: ${songDescription}
+Desired Style: ${styleDescription}
+
+Create an original song specification. Return JSON with:
+- name: Song title (max 50 chars)
+- lyrics: Complete song lyrics with verse/chorus structure
+- style_description: Detailed music style notes`
+
+        try {
+          const response = await fetch(`${BACKEND_URL}/api/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              agent: { id: agentId, name: agent.name, model_name: agent.model_name },
+              prompt,
+              model_name: agent.model_name,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error(`Generation failed: ${response.status}`)
+          }
+
+          const data = await response.json()
+          setAgentStatuses(prev => ({ ...prev, [agentId]: 'evaluated' }))
+          return { agentId, result: data }
+        } catch (error) {
+          console.error(`Generation failed for ${agentId}:`, error)
+          setAgentStatuses(prev => ({ ...prev, [agentId]: 'waiting' }))
+          return { agentId, result: null }
+        }
+      })
+
+      const results = await Promise.all(generationPromises)
+
+      // Update results
+      const validResults: Record<string, any> = {}
+      for (const { agentId, result } of results) {
+        if (result) {
+          validResults[agentId] = result
+        }
+      }
+      setGenerationResults(validResults)
+
+      // If we have results, call orchestrator
+      const resultEntries = Object.entries(validResults)
+      if (resultEntries.length > 0) {
+        setAgentStatuses(prev => ({ ...prev, ['orchestrator']: 'generating' }))
+
+        const orchestratorAgent = agents.find(a => a.id.startsWith('orch-'))
+        if (orchestratorAgent) {
+          const orchestratorResponse = await fetch(`${BACKEND_URL}/api/orchestrate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: `Evaluate these songs for: ${songDescription}\nStyle: ${styleDescription}`,
+              songs: validResults,
+              model_name: orchestratorAgent.model_name,
+            }),
+          })
+
+          if (orchestratorResponse.ok) {
+            const orchData = await orchestratorResponse.json()
+            setOrchestratorResult(orchData)
+            if (orchData.winner_agent_id) {
+              setSelectedSong(orchData.winner_agent_id)
             }
           }
-        }))
-        setAgentStatuses(prev => ({ ...prev, [agentId]: 'evaluated' }))
-      }
-
-      // Simulate orchestrator result
-      const results = Object.entries(generationResults)
-      if (results.length > 0) {
-        const winnerId = selectedAgents[Math.floor(Math.random() * selectedAgents.length)]
-        setOrchestratorResult({
-          winnerAgentId: winnerId,
-          feedback: 'This song has a strong melodic structure and matches the requested style well.',
-        })
-        setSelectedSong(winnerId)
+        }
+        setAgentStatuses(prev => ({ ...prev, ['orchestrator']: 'evaluated' }))
       }
     } catch (error) {
       console.error('Generation failed:', error)
