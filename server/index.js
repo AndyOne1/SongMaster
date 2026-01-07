@@ -30,7 +30,13 @@ async function callOpenRouter(model, messages, options = {}) {
   }
 
   const data = await response.json()
-  return JSON.parse(data.choices[0].message.content)
+  let content = data.choices[0].message.content
+
+  // Strip markdown code fences if present
+  content = content.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+  content = content.replace(/^```\s*/, '').replace(/\s*```$/, '')
+
+  return JSON.parse(content)
 }
 
 // Health check
