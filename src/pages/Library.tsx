@@ -3,22 +3,30 @@ import { Song } from '../types'
 import { Card } from '../components/ui/Card'
 import { Music, Clock, Edit2 } from 'lucide-react'
 import { supabase } from '../services/supabase/client'
+import { useAuth } from '../context/AuthContext'
 
 export function Library() {
+  const { user } = useAuth()
   const [songs, setSongs] = useState<Song[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadSongs()
-  }, [])
+    if (user) {
+      loadSongs()
+    } else {
+      setLoading(false)
+    }
+  }, [user])
 
   const loadSongs = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('songs')
       .select('*')
       .order('created_at', { ascending: false })
 
-    if (data) {
+    if (error) {
+      console.error('Error loading songs:', error)
+    } else if (data) {
       setSongs(data as Song[])
     }
     setLoading(false)

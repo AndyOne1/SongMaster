@@ -3,16 +3,22 @@ import { supabase } from '../services/supabase/client'
 import { Artist } from '../types'
 import { ArtistLibrary } from '../components/artists/ArtistLibrary'
 import { ArtistWizard } from '../components/artists/ArtistWizard'
+import { useAuth } from '../context/AuthContext'
 
 export function Artists() {
+  const { user } = useAuth()
   const [artists, setArtists] = useState<Artist[]>([])
   const [loading, setLoading] = useState(true)
   const [showWizard, setShowWizard] = useState(false)
   const [editingArtist, setEditingArtist] = useState<Artist | null>(null)
 
   useEffect(() => {
-    loadArtists()
-  }, [])
+    if (user) {
+      loadArtists()
+    } else {
+      setLoading(false)
+    }
+  }, [user])
 
   const loadArtists = async () => {
     const { data, error } = await supabase
@@ -20,7 +26,9 @@ export function Artists() {
       .select('*')
       .order('created_at', { ascending: false })
 
-    if (data) {
+    if (error) {
+      console.error('Error loading artists:', error)
+    } else if (data) {
       setArtists(data as Artist[])
     }
     setLoading(false)
