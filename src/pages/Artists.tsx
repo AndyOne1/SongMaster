@@ -15,16 +15,15 @@ export function Artists() {
   }, [])
 
   const loadArtists = async () => {
-    // For demo, use empty array since we don't have auth
-    setArtists([])
-    setLoading(false)
+    const { data, error } = await supabase
+      .from('artists')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-    // In production with auth:
-    // const { data, error } = await supabase
-    //   .from('artists')
-    //   .select('*')
-    //   .order('created_at', { ascending: false })
-    // if (data) setArtists(data as Artist[])
+    if (data) {
+      setArtists(data as Artist[])
+    }
+    setLoading(false)
   }
 
   const handleCreateArtist = () => {
