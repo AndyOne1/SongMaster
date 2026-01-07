@@ -1,1 +1,10 @@
-/* Placeholder - Tailwind will be configured in Task 3 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-900 text-gray-100;
+  }
+}
+
