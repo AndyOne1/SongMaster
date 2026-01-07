@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { supabase } from '../../services/supabase/client'
 import { Artist } from '../../types'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
@@ -28,7 +27,7 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
   const [generating, setGenerating] = useState(false)
   const [generatedOptions, setGeneratedOptions] = useState<Artist[]>([])
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
-  const [selectedAgent, setSelectedAgent] = useState<AIAgent>({ id: '1', name: 'Grok', provider: 'xAI' })
+  const [selectedAgent] = useState<AIAgent>({ id: '1', name: 'Grok', provider: 'xAI' })
 
   // Manual form state
   const [manualForm, setManualForm] = useState({

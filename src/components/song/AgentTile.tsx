@@ -1,7 +1,7 @@
 import { Agent } from '../../types'
 import { Card } from '../ui/Card'
 import { cn } from '../../lib/utils'
-import { Loader2, Check } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 interface AgentTileProps {
   agent: Agent

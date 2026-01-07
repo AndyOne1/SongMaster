@@ -3,10 +3,11 @@ import { cn } from '../../lib/utils'
 
 export interface ToggleProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   pressed: boolean
+  onPressedChange?: (pressed: boolean) => void
 }
 
 export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(
-  ({ className, pressed, ...props }, ref) => {
+  ({ className, pressed, onPressedChange, ...props }, ref) => {
     return (
       <button
         ref={ref}
@@ -15,6 +16,7 @@ export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(
           pressed ? 'bg-primary-600' : 'bg-gray-700',
           className
         )}
+        onClick={() => onPressedChange?.(!pressed)}
         {...props}
       >
         <span

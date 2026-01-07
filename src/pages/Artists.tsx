@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase/client'
 import { Artist } from '../types'
 import { ArtistLibrary } from '../components/artists/ArtistLibrary'
+import { ArtistWizard } from '../components/artists/ArtistWizard'
 
 export function Artists() {
   const [artists, setArtists] = useState<Artist[]>([])
@@ -68,7 +69,13 @@ export function Artists() {
         onEditArtist={handleEditArtist}
         onDeleteArtist={handleDeleteArtist}
       />
-      {/* Wizard will be added in Task 10 */}
+      {showWizard && (
+        <ArtistWizard
+          artist={editingArtist}
+          onClose={handleSaveArtist}
+          onSave={handleSaveArtist}
+        />
+      )}
     </div>
   )
 }

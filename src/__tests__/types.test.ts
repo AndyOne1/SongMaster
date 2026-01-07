@@ -37,6 +37,7 @@ describe('Type Definitions', () => {
       style_description: 'Rock ballad',
       status: 'draft',
       iteration_count: 0,
+      created_at: new Date(),
     }
     expect(song.name).toBe('Hey Jude')
   })
@@ -55,6 +56,7 @@ describe('Type Definitions', () => {
       total_score: 7.25,
       evaluation_status: 'evaluated',
       orchestrator_feedback: 'Great song!',
+      created_at: new Date(),
     }
     expect(generation.total_score).toBe(7.25)
   })

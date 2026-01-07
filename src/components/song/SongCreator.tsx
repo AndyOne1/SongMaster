@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { supabase } from '../../services/supabase/client'
 import { Agent, Artist } from '../../types'
 import { AgentSelector } from './AgentSelector'
 import { AgentTile } from './AgentTile'
@@ -25,7 +24,8 @@ export function SongCreator() {
   const [generationResults, setGenerationResults] = useState<Record<string, any>>({})
   const [orchestratorResult, setOrchestratorResult] = useState<any>(null)
   const [selectedSong, setSelectedSong] = useState<string | null>(null)
-  const [iterationCount, setIterationCount] = useState(0)
+  // iterationCount kept for future use
+  const [, setIterationCount] = useState(0)
 
   useEffect(() => {
     loadAgents()

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
 describe('Supabase Client', () => {
   it('should have supabase client module', async () => {
