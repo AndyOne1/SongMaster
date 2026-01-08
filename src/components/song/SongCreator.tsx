@@ -14,7 +14,6 @@ export function SongCreator() {
   const [searchParams] = useSearchParams()
   const artistId = searchParams.get('artist_id')
 
-  const [agents, setAgents] = useState<Agent[]>([])
   const [generators, setGenerators] = useState<Agent[]>([])
   const [orchestrators, setOrchestrators] = useState<Agent[]>([])
   const [loadingAgents, setLoadingAgents] = useState(true)
@@ -50,7 +49,6 @@ export function SongCreator() {
 
     if (data) {
       const allAgents = data as Agent[]
-      setAgents(allAgents)
 
       // Separate generators and orchestrators
       const genAgents = allAgents.filter(a => a.id.startsWith('gen-'))

@@ -24,14 +24,20 @@ export function SongResultTile({
 }: SongResultTileProps) {
   const [expanded, setExpanded] = useState(false)
 
+  const handleClick = () => {
+    if (typeof onSelect === 'function') {
+      onSelect()
+    }
+  }
+
   return (
     <Card
       className={cn(
         'cursor-pointer transition-all',
         isWinner && 'border-green-500 bg-green-500/5',
-        onSelect && 'hover:border-gray-600'
+        typeof onSelect === 'function' && 'hover:border-gray-600'
       )}
-      onClick={onSelect}
+      onClick={handleClick}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4">

@@ -6,14 +6,9 @@ describe('Song Creator', () => {
     expect(SongCreator).toBeDefined()
   })
 
-  it('should have AgentTile component', async () => {
-    const { AgentTile } = await import('../components/song/AgentTile')
-    expect(AgentTile).toBeDefined()
-  })
-
-  it('should have AgentSelector component', async () => {
-    const { AgentSelector } = await import('../components/song/AgentSelector')
-    expect(AgentSelector).toBeDefined()
+  it('should have SongResultTile component', async () => {
+    const { SongResultTile } = await import('../components/song/SongResultTile')
+    expect(SongResultTile).toBeDefined()
   })
 
   it('should have SongDescriptionInputs component', async () => {
