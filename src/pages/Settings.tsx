@@ -5,8 +5,10 @@ import { Input } from '../components/ui/Input'
 import { Toggle } from '../components/ui/Toggle'
 import { PromptEditor } from '../components/settings/PromptEditor'
 import { useIsAdmin } from '../hooks/useIsAdmin'
+import { useToast } from '../components/ui/Toast'
 
 export function Settings() {
+  const { showToast } = useToast()
   const { isAdmin, loading: adminLoading } = useIsAdmin()
   const [settings, setSettings] = useState({
     defaultIterations: 3,
@@ -119,7 +121,7 @@ export function Settings() {
         })}>
           Reset to Defaults
         </Button>
-        <Button onClick={() => alert('Settings saved!')}>Save Settings</Button>
+        <Button onClick={() => showToast('Settings saved!')}>Save Settings</Button>
       </div>
     </div>
   )

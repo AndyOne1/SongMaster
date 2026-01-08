@@ -9,6 +9,7 @@ import { SongDescriptionInputs } from './SongDescriptionInputs'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { supabase } from '../../services/supabase/client'
+import { useToast } from '../ui/Toast'
 import { Play, Users } from 'lucide-react'
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -35,6 +36,7 @@ interface Evaluation {
 export function SongCreator() {
   const [searchParams] = useSearchParams()
   const artistId = searchParams.get('artist_id')
+  const { showToast } = useToast()
 
   // UI State
   const [step, setStep] = useState<'selection' | 'input' | 'generating' | 'results'>('selection')
@@ -187,7 +189,7 @@ export function SongCreator() {
       setStep('results')
     } catch (error) {
       console.error('Generation failed:', error)
-      alert('Failed to generate songs. Please try again.')
+      showToast('Failed to generate songs. Please try again.', 'error')
       setStep('input')
     }
   }
@@ -209,14 +211,16 @@ export function SongCreator() {
     })
 
     if (!error) {
-      alert(`"${winnerResult.name}" saved to library!`)
+      showToast(`"${winnerResult.name}" saved to library!`)
+    } else {
+      showToast('Failed to save song', 'error')
     }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleIterate = (_customInstruction?: string) => {
     // TODO: Implement iteration
-    alert('Iteration feature coming soon!')
+    showToast('Iteration feature coming soon!', 'info')
   }
 
   const handleNewSong = () => {

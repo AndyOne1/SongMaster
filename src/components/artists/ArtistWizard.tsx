@@ -7,6 +7,7 @@ import { Card } from '../ui/Card'
 import { Wand2, Edit3, Loader2, Check } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../services/supabase/client'
+import { useToast } from '../ui/Toast'
 
 // Backend URL - set via environment variable for production
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -27,6 +28,7 @@ interface AIAgent {
 }
 
 export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
+  const { showToast } = useToast()
   const [mode, setMode] = useState<WizardMode>('select')
   const [input, setInput] = useState('')
   const [generating, setGenerating] = useState(false)
@@ -90,13 +92,13 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
 
   const handleManualSave = async () => {
     if (!manualForm.name.trim() || !manualForm.style_description.trim()) {
-      alert('Please fill in all required fields')
+      showToast('Please fill in all required fields', 'error')
       return
     }
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      alert('Please sign in to save artists')
+      showToast('Please sign in to save artists', 'error')
       return
     }
 
@@ -109,7 +111,7 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
 
     if (error) {
       console.error('Failed to save artist:', error)
-      alert('Failed to save artist: ' + error.message)
+      showToast('Failed to save artist: ' + error.message, 'error')
       return
     }
 
@@ -123,7 +125,7 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      alert('Please sign in to save artists')
+      showToast('Please sign in to save artists', 'error')
       return
     }
 
@@ -136,7 +138,7 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
 
     if (error) {
       console.error('Failed to save artist:', error)
-      alert('Failed to save artist: ' + error.message)
+      showToast('Failed to save artist: ' + error.message, 'error')
       return
     }
 
