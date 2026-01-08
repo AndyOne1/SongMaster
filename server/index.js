@@ -65,8 +65,32 @@ async function callOpenRouter(model, messages, options = {}) {
   content = content.replace(/^```json\s*/, '').replace(/\s*```$/, '')
   content = content.replace(/^```\s*/, '').replace(/\s*```$/, '')
 
-  // Parse JSON
-  const parsed = JSON.parse(content)
+  // Try to parse JSON, handle incomplete responses
+  let parsed
+  try {
+    parsed = JSON.parse(content)
+  } catch (parseError) {
+    // Try to salvage incomplete JSON by finding the last complete object
+    console.log(`[openrouter] JSON parse error for ${model}, trying to salvage...`)
+    console.log(`[openrouter] Raw content (first 500 chars):`, content.substring(0, 500))
+
+    // Try to find and parse just the lyrics (often the longest field)
+    const lyricsMatch = content.match(/"lyrics"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/)
+    if (lyricsMatch) {
+      const nameMatch = content.match(/"name"\s*:\s*"([^"]*)"/)
+      const styleMatch = content.match(/"style"\s*:\s*"([^"]*)"/)
+      const styleDescMatch = content.match(/"style_description"\s*:\s*"([^"]*)"/)
+
+      return {
+        name: nameMatch ? nameMatch[1] : 'Untitled',
+        style: styleMatch ? styleMatch[1] : styleDescMatch ? styleDescMatch[1] : '',
+        lyrics: lyricsMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+      }
+    }
+
+    // If we can't salvage, throw the original error
+    throw new Error(`JSON parse error: ${parseError.message}. Raw: ${content.substring(0, 100)}...`)
+  }
 
   // For generate endpoint: extract structured fields
   // For orchestrate endpoint: return full response
