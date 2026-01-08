@@ -77,47 +77,36 @@ async function callOpenRouter(model, messages, options = {}) {
     // For artist generation: handle array of objects with potential truncation
     if (content.includes('"options"') || content.includes('"artists"')) {
       try {
-        // Try to find and fix the options array
-        let fixed = content
+        // Find the options/artists array start
+        const optionsMatch = content.match(/"options"\s*:\s*\[/)
+        const artistsMatch = content.match(/"artists"\s*:\s*\[/)
+        const arrayMatch = optionsMatch || artistsMatch
 
-        // Remove any trailing text after the last complete object
-        const lastOpenBrace = fixed.lastIndexOf('{')
-        const lastCloseBrace = fixed.lastIndexOf('}')
+        if (arrayMatch) {
+          const arrayStart = arrayMatch.index + arrayMatch[0].length
+          const contentAfterArray = content.substring(arrayStart)
 
-        if (lastCloseBrace > lastOpenBrace) {
-          // Find where the options array might end
-          const optionsMatch = fixed.match(/"options"\s*:\s*\[/)
-          if (optionsMatch) {
-            const optionsStart = optionsMatch.index + optionsMatch[0].length
-            // Count brackets to find where options array ends
-            let braceCount = 1
-            let i = optionsStart
-            while (braceCount > 0 && i < fixed.length) {
-              if (fixed[i] === '{') braceCount++
-              else if (fixed[i] === '}') braceCount--
-              i++
-            }
-            if (braceCount === 0) {
-              // Found complete options array
-              const optionsContent = fixed.substring(optionsStart, i)
-              const objectMatches = optionsContent.matchAll(/\{[^}]*\}/g)
-              const validObjects = []
+          // Extract individual artist objects using regex
+          // Match {...} pairs that represent complete objects
+          const objectMatches = contentAfterArray.matchAll(/\{(?:[^{}]|\{[^{}]*\})*\}/g)
+          const validObjects = []
 
-              for (const match of objectMatches) {
-                try {
-                  const obj = JSON.parse(match[0])
-                  validObjects.push(obj)
-                } catch {
-                  // Skip invalid objects
-                }
+          for (const match of objectMatches) {
+            try {
+              const obj = JSON.parse(match[0])
+              // Check if it has expected artist fields
+              if (obj.artist_name || obj.name) {
+                validObjects.push(obj)
               }
-
-              if (validObjects.length > 0) {
-                const salvaged = { options: validObjects }
-                console.log(`[openrouter] Salvaged ${validObjects.length} artist options from truncated JSON`)
-                return salvaged
-              }
+            } catch {
+              // Skip invalid objects
             }
+          }
+
+          if (validObjects.length > 0) {
+            const salvaged = { options: validObjects }
+            console.log(`[openrouter] Salvaged ${validObjects.length} artist options from truncated JSON`)
+            return salvaged
           }
         }
       } catch (salvageError) {
