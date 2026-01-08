@@ -4,21 +4,32 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Trophy, RefreshCw, Plus, ChevronDown, ChevronUp } from 'lucide-react'
 
+interface WinnerScores {
+  music_style: number
+  lyrics: number
+  originality: number
+  cohesion: number
+  request_alignment?: number
+  suno_execution_prediction?: number
+}
+
+interface WinnerAnalysis {
+  reason: string
+  key_differentiators?: string[]
+  best_for?: string
+}
+
 interface OrchestratorCardProps {
   orchestratorName: string
   status: 'waiting' | 'fetching' | 'analyzing' | 'scoring' | 'evaluating' | 'complete'
   winnerName?: string
   winnerReason?: string
   winnerAgentId?: string
-  winnerScores?: {
-    music_style: number
-    lyrics: number
-    originality: number
-    cohesion: number
-  }
+  winnerScores?: WinnerScores
   onSave: () => void
   onIterate: (customInstruction?: string) => void
   onNewSong: () => void
+  winnerAnalysis?: WinnerAnalysis | null
 }
 
 const statusMessages: Record<string, string> = {
@@ -30,6 +41,49 @@ const statusMessages: Record<string, string> = {
   complete: 'Evaluation complete'
 }
 
+function ScoreDisplay({ scores }: { scores: WinnerScores | undefined }) {
+  if (!scores) return null
+
+  const scoreItems: { key: keyof WinnerScores; label: string }[] = [
+    { key: 'music_style', label: 'Mus' },
+    { key: 'lyrics', label: 'Lyr' },
+    { key: 'originality', label: 'Org' },
+    { key: 'cohesion', label: 'Coh' },
+  ]
+
+  // Add 5th score if present (request_alignment)
+  if (scores.request_alignment) {
+    scoreItems.push({ key: 'request_alignment', label: 'Aln' })
+  }
+
+  return (
+    <div className="bg-gray-900/50 rounded p-2 text-xs">
+      <div className={`grid gap-1 text-center mb-1 ${scoreItems.length > 4 ? 'grid-cols-5' : 'grid-cols-4'}`}>
+        {scoreItems.map(({ label }) => (
+          <span key={label} className="text-gray-500 text-[10px] uppercase">
+            {label}
+          </span>
+        ))}
+      </div>
+      <div className={`grid gap-1 text-center ${scoreItems.length > 4 ? 'grid-cols-5' : 'grid-cols-4'}`}>
+        {scoreItems.map(({ key }) => (
+          <span
+            key={key}
+            className={cn(
+              'font-medium',
+              (scores[key] ?? 0) >= 8 ? 'text-green-400' :
+              (scores[key] ?? 0) >= 6 ? 'text-yellow-400' :
+              (scores[key] ?? 0) >= 4 ? 'text-orange-400' : 'text-red-400'
+            )}
+          >
+            {scores[key]}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function OrchestratorCard({
   orchestratorName,
   status,
@@ -38,7 +92,8 @@ export function OrchestratorCard({
   winnerScores,
   onSave,
   onIterate,
-  onNewSong
+  onNewSong,
+  winnerAnalysis
 }: OrchestratorCardProps) {
   const [showCustomInstruction, setShowCustomInstruction] = useState(false)
   const [customInstruction, setCustomInstruction] = useState('')
@@ -82,21 +137,21 @@ export function OrchestratorCard({
           {winnerReason && (
             <p className="text-sm text-gray-400 mb-3">{winnerReason}</p>
           )}
+
           {/* Winner Scores */}
           {winnerScores && (
-            <div className="bg-gray-900/50 rounded p-2 text-xs mt-3">
-              <div className="grid grid-cols-4 gap-1 text-center mb-1">
-                <span className="text-gray-500 text-[10px] uppercase">Mus</span>
-                <span className="text-gray-500 text-[10px] uppercase">Lyr</span>
-                <span className="text-gray-500 text-[10px] uppercase">Org</span>
-                <span className="text-gray-500 text-[10px] uppercase">Coh</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1 text-center">
-                <span className="text-gray-200">{winnerScores.music_style}</span>
-                <span className="text-gray-200">{winnerScores.lyrics}</span>
-                <span className="text-gray-200">{winnerScores.originality}</span>
-                <span className="text-gray-200">{winnerScores.cohesion}</span>
-              </div>
+            <ScoreDisplay scores={winnerScores} />
+          )}
+
+          {/* Winner Analysis */}
+          {winnerAnalysis && (
+            <div className="mt-3 p-2 bg-yellow-500/10 rounded">
+              <p className="text-xs text-gray-300">{winnerAnalysis.reason}</p>
+              {winnerAnalysis.best_for && (
+                <p className="text-xs text-gray-500 mt-1">
+                  <span className="text-yellow-400">Best for:</span> {winnerAnalysis.best_for}
+                </p>
+              )}
             </div>
           )}
         </div>

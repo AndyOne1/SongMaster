@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Agent, Artist } from '../../types'
+import { Agent, Artist, DetailedEvaluation } from '../../types'
 import { AgentSelectionModal } from './AgentSelectionModal'
 import { AgentCard } from './AgentCard'
 import { OrchestratorCard } from './OrchestratorCard'
@@ -20,17 +20,17 @@ interface SongResult {
   lyrics: string
 }
 
+// Support both legacy (4 scores) and new detailed (6 scores) evaluation formats
 interface Evaluation {
-  matched_request?: string
-  scores?: {
-    music_style: number
-    lyrics: number
-    originality: number
-    cohesion: number
-  }
-  analysis?: string
-  evaluation?: string
-  recommendations?: string
+  suno_compliance?: DetailedEvaluation['suno_compliance']
+  matched_request?: string | { alignment: string; explanation: string }
+  scores?: DetailedEvaluation['scores']
+  strengths?: DetailedEvaluation['strengths']
+  weaknesses?: DetailedEvaluation['weaknesses']
+  analysis?: DetailedEvaluation['analysis']
+  recommendations?: string | DetailedEvaluation['recommendations']
+  predicted_suno_result?: DetailedEvaluation['predicted_suno_result']
+  commercial_potential?: DetailedEvaluation['commercial_potential']
 }
 
 export function SongCreator() {
@@ -57,6 +57,11 @@ export function SongCreator() {
   const [evaluations, setEvaluations] = useState<Record<string, Evaluation>>({})
   const [winnerAgentId, setWinnerAgentId] = useState<string | null>(null)
   const [winnerReason, setWinnerReason] = useState('')
+  const [winnerAnalysis, setWinnerAnalysis] = useState<{
+    reason: string
+    key_differentiators?: string[]
+    best_for?: string
+  } | null>(null)
   const [overrideAgentId, setOverrideAgentId] = useState<string | null>(null)
 
   // Detail Modal
@@ -102,6 +107,7 @@ export function SongCreator() {
     setEvaluations({})
     setWinnerAgentId(null)
     setWinnerReason('')
+    setWinnerAnalysis(null)
     setOverrideAgentId(null)
 
     try {
@@ -181,6 +187,7 @@ export function SongCreator() {
           setEvaluations(data.evaluations || {})
           setWinnerAgentId(data.winner_agent_id)
           setWinnerReason(data.winner_reason || '')
+          setWinnerAnalysis(data.winner_analysis || null)
         }
 
         setOrchestratorStatus('complete')
@@ -231,6 +238,7 @@ export function SongCreator() {
     setEvaluations({})
     setWinnerAgentId(null)
     setWinnerReason('')
+    setWinnerAnalysis(null)
     setOverrideAgentId(null)
   }
 
@@ -310,6 +318,7 @@ export function SongCreator() {
                   onSave={handleSaveSong}
                   onIterate={handleIterate}
                   onNewSong={handleNewSong}
+                  winnerAnalysis={winnerAnalysis}
                 />
               </div>
             )}
@@ -362,11 +371,12 @@ export function SongCreator() {
           songName={agentResults[detailModal.agentId]?.name || ''}
           style={agentResults[detailModal.agentId]?.style || ''}
           lyrics={agentResults[detailModal.agentId]?.lyrics || ''}
-          evaluation={evaluations[detailModal.agentId]}
+          evaluation={evaluations[detailModal.agentId] as DetailedEvaluation | undefined}
           onSave={handleSaveSong}
           onOverride={() => handleOverride(detailModal.agentId)}
           isWinner={winnerId === detailModal.agentId}
           isOverride={overrideAgentId === detailModal.agentId}
+          winnerAnalysis={winnerId === detailModal.agentId ? (winnerAnalysis || undefined) : undefined}
         />
       )}
     </div>
