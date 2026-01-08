@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Agent, Artist, DetailedEvaluation } from '../../types'
 import { IterationContext } from '../../types/song'
-import { AgentSelectionModal } from './AgentSelectionModal'
+import { AgentSelectionPanel } from './AgentSelectionPanel'
 import { AgentCard } from './AgentCard'
 import { OrchestratorCard } from './OrchestratorCard'
 import { SongDetailModal } from './SongDetailModal'
@@ -42,7 +42,6 @@ export function SongCreator() {
 
   // UI State
   const [step, setStep] = useState<'selection' | 'input' | 'generating' | 'results'>('selection')
-  const [showAgentModal, setShowAgentModal] = useState(true)
 
   // Data
   const [agents, setAgents] = useState<Agent[]>([])
@@ -107,7 +106,6 @@ export function SongCreator() {
   const handleAgentsSelected = (agentIds: string[], orchestratorId: string) => {
     setSelectedAgentIds(agentIds)
     setSelectedOrchestratorId(orchestratorId)
-    setShowAgentModal(false)
     setStep('input')
   }
 
@@ -467,14 +465,14 @@ export function SongCreator() {
         {artist && <p className="text-gray-500">for {artist.name}</p>}
       </div>
 
-      {/* Agent Selection Modal */}
-      <AgentSelectionModal
-        isOpen={showAgentModal && step === 'selection'}
-        onClose={() => {}}
-        onConfirm={handleAgentsSelected}
-        agents={agents.filter(a => a.id.startsWith('gen-'))}
-        orchestrators={agents.filter(a => a.id.startsWith('orch-'))}
-      />
+      {/* Agent Selection Panel */}
+      {step === 'selection' && (
+        <AgentSelectionPanel
+          onConfirm={handleAgentsSelected}
+          agents={agents.filter(a => a.id.startsWith('gen-'))}
+          orchestrators={agents.filter(a => a.id.startsWith('orch-'))}
+        />
+      )}
 
       {/* Loading Screen */}
       {step === 'generating' && (
