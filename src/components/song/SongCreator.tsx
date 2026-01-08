@@ -20,13 +20,15 @@ interface SongResult {
 }
 
 interface Evaluation {
-  analysis: string
-  scores: {
+  matched_request?: string
+  scores?: {
     music_style: number
     lyrics: number
     originality: number
     cohesion: number
   }
+  analysis?: string
+  evaluation?: string
   recommendations?: string
 }
 
@@ -314,6 +316,7 @@ Return valid JSON only.`
                   status={orchestratorStatus}
                   winnerName={winnerId ? agentResults[winnerId]?.name : undefined}
                   winnerReason={winnerReason}
+                  winnerScores={winnerId ? evaluations[winnerId]?.scores : undefined}
                   onSave={handleSaveSong}
                   onIterate={handleIterate}
                   onNewSong={handleNewSong}

@@ -10,6 +10,12 @@ interface OrchestratorCardProps {
   winnerName?: string
   winnerReason?: string
   winnerAgentId?: string
+  winnerScores?: {
+    music_style: number
+    lyrics: number
+    originality: number
+    cohesion: number
+  }
   onSave: () => void
   onIterate: (customInstruction?: string) => void
   onNewSong: () => void
@@ -29,6 +35,7 @@ export function OrchestratorCard({
   status,
   winnerName,
   winnerReason,
+  winnerScores,
   onSave,
   onIterate,
   onNewSong
@@ -55,7 +62,7 @@ export function OrchestratorCard({
           'text-xs px-2 py-0.5 rounded ml-auto',
           isComplete ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-700 text-gray-400'
         )}>
-          {isComplete ? 'Winner' : status}
+          {isComplete ? 'Complete' : status}
         </span>
       </div>
 
@@ -67,9 +74,30 @@ export function OrchestratorCard({
         </div>
       ) : isComplete && winnerName ? (
         <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Trophy className="h-4 w-4 text-yellow-400" />
+            <span className="text-xs text-yellow-400 uppercase tracking-wide">Winner</span>
+          </div>
           <h3 className="font-medium text-gray-200 mb-1">{winnerName}</h3>
           {winnerReason && (
-            <p className="text-sm text-gray-400">{winnerReason}</p>
+            <p className="text-sm text-gray-400 mb-3">{winnerReason}</p>
+          )}
+          {/* Winner Scores */}
+          {winnerScores && (
+            <div className="bg-gray-900/50 rounded p-2 text-xs mt-3">
+              <div className="grid grid-cols-4 gap-1 text-center mb-1">
+                <span className="text-gray-500 text-[10px] uppercase">Mus</span>
+                <span className="text-gray-500 text-[10px] uppercase">Lyr</span>
+                <span className="text-gray-500 text-[10px] uppercase">Org</span>
+                <span className="text-gray-500 text-[10px] uppercase">Coh</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1 text-center">
+                <span className="text-gray-200">{winnerScores.music_style}</span>
+                <span className="text-gray-200">{winnerScores.lyrics}</span>
+                <span className="text-gray-200">{winnerScores.originality}</span>
+                <span className="text-gray-200">{winnerScores.cohesion}</span>
+              </div>
+            </div>
           )}
         </div>
       ) : (

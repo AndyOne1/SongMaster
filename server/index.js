@@ -36,13 +36,20 @@ async function callOpenRouter(model, messages, options = {}) {
   content = content.replace(/^```json\s*/, '').replace(/\s*```$/, '')
   content = content.replace(/^```\s*/, '').replace(/\s*```$/, '')
 
-  // Parse and extract fields
+  // Parse JSON
   const parsed = JSON.parse(content)
-  return {
-    name: parsed.name || 'Untitled',
-    style: parsed.style || parsed.style_description || '',
-    lyrics: parsed.lyrics || ''
+
+  // For generate endpoint: extract structured fields
+  // For orchestrate endpoint: return full response
+  if (options.extractFields) {
+    return {
+      name: parsed.name || 'Untitled',
+      style: parsed.style || parsed.style_description || '',
+      lyrics: parsed.lyrics || ''
+    }
   }
+
+  return parsed
 }
 
 // Health check
@@ -64,7 +71,7 @@ app.post('/api/generate', async (req, res) => {
       const result = await callOpenRouter(
         agent.model_name,
         [{ role: 'user', content: prompt }],
-        { maxTokens: 4000 }
+        { maxTokens: 4000, extractFields: true }
       )
       return { agentId: agent.id, ...result }
     })
@@ -144,10 +151,11 @@ app.post('/api/orchestrate', async (req, res) => {
   try {
     // Build songs summary for evaluation
     const songsSummary = Object.entries(songs).map(([agentId, song]) => {
+      const lyrics = song.lyrics || ''
       return `[Agent: ${agentId}]
-Name: ${song.name}
-Style: ${song.style}
-Lyrics: ${song.lyrics.substring(0, 500)}...`
+Name: ${song.name || 'Untitled'}
+Style: ${song.style || song.style_description || 'Unknown'}
+Lyrics: ${lyrics.substring(0, 500)}${lyrics.length > 500 ? '...' : ''}`
     }).join('\n\n---\n\n')
 
     const result = await callOpenRouter(

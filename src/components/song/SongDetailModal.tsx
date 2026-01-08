@@ -5,13 +5,15 @@ import { Save, Check } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 interface Evaluation {
-  analysis: string
-  scores: {
+  matched_request?: string
+  scores?: {
     music_style: number
     lyrics: number
     originality: number
     cohesion: number
   }
+  analysis?: string
+  evaluation?: string
   recommendations?: string
 }
 
@@ -68,27 +70,44 @@ export function SongDetailModal({
       {evaluation && (
         <Card className="mb-4 p-3 bg-gray-900/50">
           <h4 className="font-medium text-gray-200 mb-2">Orchestrator Evaluation</h4>
-          <p className="text-sm text-gray-400 mb-3">{evaluation.analysis}</p>
+
+          {evaluation.matched_request && (
+            <p className="text-sm text-gray-400 mb-2">
+              <strong className="text-gray-300">Matched Request:</strong> {evaluation.matched_request}
+            </p>
+          )}
+
+          {evaluation.analysis && (
+            <p className="text-sm text-gray-400 mb-3">{evaluation.analysis}</p>
+          )}
 
           {/* Scores */}
-          <div className="grid grid-cols-4 gap-2 text-center mb-3">
-            {[
-              { label: 'Music', value: evaluation.scores.music_style },
-              { label: 'Lyrics', value: evaluation.scores.lyrics },
-              { label: 'Originality', value: evaluation.scores.originality },
-              { label: 'Cohesion', value: evaluation.scores.cohesion },
-            ].map(({ label, value }) => (
-              <div key={label}>
-                <div className={cn(
-                  'text-lg font-bold',
-                  value >= 8 ? 'text-green-400' : value >= 5 ? 'text-yellow-400' : 'text-red-400'
-                )}>
-                  {value}
+          {evaluation.scores && (
+            <div className="grid grid-cols-4 gap-2 text-center mb-3">
+              {[
+                { label: 'Music', value: evaluation.scores.music_style },
+                { label: 'Lyrics', value: evaluation.scores.lyrics },
+                { label: 'Originality', value: evaluation.scores.originality },
+                { label: 'Cohesion', value: evaluation.scores.cohesion },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <div className={cn(
+                    'text-lg font-bold',
+                    value >= 8 ? 'text-green-400' : value >= 5 ? 'text-yellow-400' : 'text-red-400'
+                  )}>
+                    {value}
+                  </div>
+                  <div className="text-xs text-gray-500">{label}</div>
                 </div>
-                <div className="text-xs text-gray-500">{label}</div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+
+          {evaluation.evaluation && (
+            <p className="text-sm text-gray-400 border-t border-gray-700 pt-2 mb-2">
+              {evaluation.evaluation}
+            </p>
+          )}
 
           {evaluation.recommendations && (
             <div className="text-sm text-gray-400 border-t border-gray-700 pt-2">
