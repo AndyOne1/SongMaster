@@ -444,7 +444,6 @@ app.post('/api/generate-artist', async (req, res) => {
 Return JSON: {"options": [{"artist_name":"Name","artist_type":"Solo Artist","tagline":"Essence in one sentence","origin_story":"Brief background","career_stage":"Emerging","musical_dna":{"core_genre":"Primary genre","signature_sound":"What makes them unique","tempo_range":"85-110 BPM","key_preferences":"E minor, A minor","production_style":"Clean atmospheric"},"lyrical_identity":{"writing_approach":"Direct/metaphorical","core_themes":["Theme 1","Theme 2"],"emotional_palette":"Melancholic","message":"Artistic mission"},"suno_guidelines":{"default_bpm":"85-95 BPM","preferred_keys":"E minor","standard_instrumentation":"Synth pads, sub bass","default_vocal_tags":["Female Vocal | Soft"],"avoid_tags":["Gritty"],"energy_variation":"Verses: 4/10, Chorus: 8/10"},"brand_identity":{"visual_aesthetic":"Color palette","target_audience":"Who connects"},"agent_brief":"Create songs as [Name]: [summary]","short_style_summary":"1-2 sentence style summary"}]}
 
 Include variety and authentic-feeling identities. Keep JSON valid and complete.`
-}
     }
 
     const result = await callOpenRouter(
