@@ -76,6 +76,7 @@ export function SongCreator() {
   const [iterationContext, setIterationContext] = useState<IterationContext | null>(null)
   const [iterationCount, setIterationCount] = useState(0)
   const [showSaveWarning, setShowSaveWarning] = useState(false)
+  const [songSaved, setSongSaved] = useState(false)
 
   // Detail Modal
   const [detailModal, setDetailModal] = useState<{
@@ -260,6 +261,7 @@ export function SongCreator() {
     })
 
     if (!error) {
+      setSongSaved(true)
       showToast(`"${winnerResult.name}" saved to library!`)
     } else {
       showToast('Failed to save song: ' + error.message, 'error')
@@ -275,7 +277,7 @@ export function SongCreator() {
       return
     }
 
-    // Store the iteration context for when user confirms
+    // Store the iteration context
     const recs = winnerEvaluation.recommendations as any
     setIterationContext({
       evaluation: {
@@ -295,7 +297,12 @@ export function SongCreator() {
       iteration_number: iterationCount + 1,
     })
 
-    setShowSaveWarning(true)
+    // If song is already saved, proceed directly without warning
+    if (songSaved) {
+      executeIteration()
+    } else {
+      setShowSaveWarning(true)
+    }
   }
 
   const handleSaveAndIterate = async () => {
@@ -312,6 +319,8 @@ export function SongCreator() {
   const executeIteration = async () => {
     if (!iterationContext) return
 
+    // New iteration result is not yet saved
+    setSongSaved(false)
     setOrchestratorStatus('waiting')
     setEvaluations({})
     setWinnerAgentId(null)
@@ -439,6 +448,8 @@ export function SongCreator() {
     setWinnerReason('')
     setWinnerAnalysis(null)
     setOverrideAgentId(null)
+    setIterationCount(0)
+    setSongSaved(false)
   }
 
   const handleOverride = (agentId: string) => {
