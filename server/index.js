@@ -32,11 +32,17 @@ async function callOpenRouter(model, messages, options = {}) {
   const data = await response.json()
   let content = data.choices[0].message.content
 
-  // Strip markdown code fences if present
+  // Strip markdown code fences
   content = content.replace(/^```json\s*/, '').replace(/\s*```$/, '')
   content = content.replace(/^```\s*/, '').replace(/\s*```$/, '')
 
-  return JSON.parse(content)
+  // Parse and extract fields
+  const parsed = JSON.parse(content)
+  return {
+    name: parsed.name || 'Untitled',
+    style: parsed.style || parsed.style_description || '',
+    lyrics: parsed.lyrics || ''
+  }
 }
 
 // Health check
@@ -44,20 +50,48 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' })
 })
 
-// Generate song endpoint
+// Generate song endpoint (multi-agent parallel generation)
 app.post('/api/generate', async (req, res) => {
-  const { agent, prompt, model_name } = req.body
+  const { song_id, agents, prompt, user_request, user_style } = req.body
+
+  if (!song_id || !agents || agents.length === 0) {
+    return res.status(400).json({ error: 'song_id and agents required' })
+  }
 
   try {
-    const result = await callOpenRouter(
-      model_name || 'anthropic/claude-sonnet-4.5',
-      [{ role: 'user', content: prompt }],
-      { maxTokens: 4000 }
-    )
-    res.json(result)
+    // Call all agents in parallel
+    const agentPromises = agents.map(async (agent) => {
+      const result = await callOpenRouter(
+        agent.model_name,
+        [{ role: 'user', content: prompt }],
+        { maxTokens: 4000 }
+      )
+      return { agentId: agent.id, ...result }
+    })
+
+    const results = await Promise.allSettled(agentPromises)
+
+    // Collect successful results
+    const completedResults = {}
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value) {
+        completedResults[result.value.agentId] = {
+          name: result.value.name,
+          style: result.value.style,
+          lyrics: result.value.lyrics
+        }
+      }
+    }
+
+    res.json({
+      song_id,
+      results: completedResults,
+      completed_count: Object.keys(completedResults).length,
+      failed_count: agents.length - Object.keys(completedResults).length
+    })
   } catch (error) {
-    console.error('Song generation error:', error)
-    res.status(500).json({ error: error.message || 'Failed to generate song' })
+    console.error('Generation error:', error)
+    res.status(500).json({ error: error.message || 'Failed to generate' })
   }
 })
 
@@ -99,46 +133,73 @@ Be creative and varied with each option.`
   }
 })
 
-// Orchestrate endpoint (evaluate and score songs)
+// Orchestrate endpoint (evaluate and score songs with structured output)
 app.post('/api/orchestrate', async (req, res) => {
-  const { prompt, songs, model_name } = req.body
+  const { song_id, user_request, user_style, songs } = req.body
+
+  if (!song_id || !songs || Object.keys(songs).length === 0) {
+    return res.status(400).json({ error: 'song_id and songs required' })
+  }
 
   try {
+    // Build songs summary for evaluation
+    const songsSummary = Object.entries(songs).map(([agentId, song]) => {
+      return `[Agent: ${agentId}]
+Name: ${song.name}
+Style: ${song.style}
+Lyrics: ${song.lyrics.substring(0, 500)}...`
+    }).join('\n\n---\n\n')
+
     const result = await callOpenRouter(
-      model_name || 'anthropic/claude-sonnet-4.5',
+      process.env.ORCHESTRATOR_MODEL || 'anthropic/claude-sonnet-4-20250514',
       [
         {
           role: 'system',
-          content: `You are an expert music producer and critic. Evaluate song specifications and score them.
+          content: `You are an expert music producer. Evaluate these song specifications and score them.
 
-For each song, evaluate on a scale of 1-10:
-- Music Style: How well the style matches the request
-- Lyrics: Quality, coherence, and emotional impact
-- Originality: Creative and unique elements
-- Cohesion: How well lyrics and style work together
+# User Request
+Song Description: ${user_request}
+Desired Style: ${user_style}
 
+# Songs to Evaluate
+${songsSummary}
+
+# Scoring Criteria (1-10 each)
+1. Music Style: How well the style matches the request
+2. Lyrics: Quality, coherence, and emotional impact
+3. Originality: Creative and unique elements
+4. Cohesion: How well lyrics and style work together
+
+# Output Format
 Return JSON with this structure:
 {
-  "scores": {
+  "evaluations": {
     "agent_id": {
-      "music_style": 8,
-      "lyrics": 7,
-      "originality": 6,
-      "cohesion": 8,
-      "total": 7.25
+      "matched_request": "Yes/No + brief explanation",
+      "scores": {
+        "music_style": 8,
+        "lyrics": 7,
+        "originality": 6,
+        "cohesion": 8
+      },
+      "analysis": "Short 1-2 sentence analysis",
+      "evaluation": "Full evaluation paragraph",
+      "recommendations": "How to improve / make more like request"
     }
   },
-  "feedback": {
-    "agent_id": "Brief explanation of scores"
-  },
-  "winner_agent_id": "agent_id_of_best_song"
+  "winner_agent_id": "agent_id_of_best_song",
+  "winner_reason": "Why this song won (2-3 sentences)"
 }`
         },
-        { role: 'user', content: `Evaluate these songs:\n\n${JSON.stringify(songs, null, 2)}` }
+        { role: 'user', content: 'Evaluate all songs and return structured JSON.' }
       ],
-      { maxTokens: 2000 }
+      { maxTokens: 3000 }
     )
-    res.json(result)
+
+    res.json({
+      song_id,
+      ...result
+    })
   } catch (error) {
     console.error('Orchestration error:', error)
     res.status(500).json({ error: error.message || 'Failed to orchestrate' })
