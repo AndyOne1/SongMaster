@@ -167,38 +167,60 @@ function buildIterationPrompt(basePrompt, iterationContext) {
 
 ---
 
-## ITERATION CONTEXT (Previous Generation Feedback)
+## ITERATION GUIDELINES (IMPORTANT - READ CAREFULLY)
 
-Your previous generation of this song received the following evaluation:
+You are ITERATING on an existing song, not creating a new one. The goal is to IMPROVE specific areas while PRESERVING what already works.
 
-### STRENGTHS (Preserve these):
+### YOUR CORE PRINCIPLES:
+1. PRESERVE the song structure, melody feel, and overall vibe
+2. ONLY change what's specifically mentioned in weaknesses or recommendations
+3. KEEP the strengths intact - don't accidentally break what works
+4. MAKE MINIMAL CHANGES - targeted tweaks, not wholesale rewrites
+5. The song title should remain the same (it's preserved separately)
+
+### STRENGTHS (DO NOT CHANGE THESE):
 ${strengths}
 
-### WEAKNESSES (Improve these):
+### WEAKNESSES TO ADDRESS (make targeted improvements):
 ${weaknesses}
 
-### RECOMMENDATIONS:
+### RECOMMENDATIONS (apply in priority order):
 
-Critical Fixes:
-${criticalFixes}
+**CRITICAL FIXES** (must do):
+${criticalFixes || 'None'}
 
-Quick Wins:
-${quickWins}
+**QUICK WINS** (easy improvements):
+${quickWins || 'None'}
 
-Depth Enhancements:
-${depthEnhancements}
+**DEPTH ENHANCEMENTS** (if time permits):
+${depthEnhancements || 'None'}
 
-Suno Optimization:
-${sunoOptimization}
+**SUNO OPTIMIZATION** (for better AI music generation):
+${sunoOptimization || 'None'}
 
 ---
 
-## TASK
-Improve this song based on the feedback above. Preserve the strengths while addressing the weaknesses and recommendations. The original request was:
+## YOUR TASK
 
-**Request:** ${iterationContext.original_request}
-**Style:** ${iterationContext.original_style}
-${iterationContext.custom_instructions ? `**Custom Instructions:** ${iterationContext.custom_instructions}` : ''}
+Based on the user's original request and the feedback above, make MINIMAL changes to improve the song:
+
+**ORIGINAL REQUEST:**
+${iterationContext.original_request}
+
+**ORIGINAL STYLE:**
+${iterationContext.original_style}
+${iterationContext.custom_instructions ? `
+
+**USER CUSTOM INSTRUCTIONS:**
+${iterationContext.custom_instructions}` : ''}
+
+**Iteration instructions:**
+- Address the critical fixes first
+- Apply quick wins where relevant
+- Only use depth enhancements if they don't conflict with preserving strengths
+- Keep suno optimization tips in mind for style description
+
+Remember: You are iterating, not starting fresh. Keep what works, fix what doesn't.
 
 Iteration #${iterationContext.iteration_number}
 `
@@ -211,11 +233,14 @@ app.get('/api/health', (req, res) => {
 
 // Generate song endpoint (multi-agent parallel generation)
 app.post('/api/generate', async (req, res) => {
-  const { song_id, agents, prompt, user_request, user_style, custom_instructions, iteration_context } = req.body
+  const { song_id, agents, prompt, user_request, user_style, custom_instructions, iteration_context, original_title, iteration_number } = req.body
 
   if (!song_id || !agents || agents.length === 0) {
     return res.status(400).json({ error: 'song_id and agents required' })
   }
+
+  // Build iteration title suffix
+  const iterationSuffix = (iteration_number && iteration_number > 0) ? ` (Iteration #${iteration_number})` : ''
 
   // Build artist context if artist info provided
   const artistContext = req.body.artist_context || ''
@@ -281,8 +306,12 @@ Return valid JSON only.`
         if (result.value.error) {
           failedAgents.push({ agentId: result.value.agentId, error: result.value.error })
         } else if (result.value.name && result.value.lyrics) {
+          // Use original title with iteration suffix, or agent's generated name
+          const songName = (original_title && iterationSuffix)
+            ? `${original_title}${iterationSuffix}`
+            : result.value.name
           completedResults[result.value.agentId] = {
-            name: result.value.name,
+            name: songName,
             style: result.value.style,
             lyrics: result.value.lyrics
           }

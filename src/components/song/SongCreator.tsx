@@ -331,6 +331,10 @@ export function SongCreator() {
         const agent = agents.find(a => a.id === agentId)
         setAgentStatuses(prev => ({ ...prev, [agentId]: 'generating' }))
 
+        // Get original song title from winner for iteration
+        const effectiveWinnerId = overrideAgentId || winnerAgentId
+        const originalTitle = effectiveWinnerId ? agentResults[effectiveWinnerId]?.name : undefined
+
         try {
           const response = await fetch(`${BACKEND_URL}/api/generate`, {
             method: 'POST',
@@ -341,7 +345,9 @@ export function SongCreator() {
               user_request: iterationContext.original_request,
               user_style: iterationContext.original_style,
               custom_instructions: iterationContext.custom_instructions,
-              iteration_context: iterationContext
+              iteration_context: iterationContext,
+              original_title: originalTitle,
+              iteration_number: iterationContext.iteration_number
             })
           })
 
