@@ -47,7 +47,6 @@ export function SongCreator() {
   const [styleDescription, setStyleDescription] = useState('')
 
   // Results
-  const [songId, setSongId] = useState<string | null>(null)
   const [agentResults, setAgentResults] = useState<Record<string, SongResult>>({})
   const [agentStatuses, setAgentStatuses] = useState<Record<string, 'waiting' | 'generating' | 'done' | 'error'>>({})
   const [orchestratorStatus, setOrchestratorStatus] = useState<'waiting' | 'fetching' | 'analyzing' | 'scoring' | 'evaluating' | 'complete'>('waiting')
@@ -104,7 +103,6 @@ export function SongCreator() {
     try {
       // Generate song_id for tracking
       const newSongId = crypto.randomUUID()
-      setSongId(newSongId)
 
       // Get selected agents
       const selectedAgents = agents.filter(a => selectedAgentIds.includes(a.id))
