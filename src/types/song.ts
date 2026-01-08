@@ -8,6 +8,11 @@ export interface Song {
   status: SongStatus
   iteration_count: number
   selected_generation_id?: string
+  // Evaluation data from orchestrator
+  evaluation_data?: DetailedEvaluation
+  winner_agent_id?: string
+  winner_reason?: string
+  winner_analysis?: WinnerAnalysis
   created_at: Date
   updated_at?: Date
 }

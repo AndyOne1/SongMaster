@@ -234,6 +234,7 @@ export function SongCreator() {
     // Save song to library
     const winnerId = overrideAgentId || winnerAgentId
     const winnerResult = winnerId ? agentResults[winnerId] : null
+    const winnerEvaluation = winnerId ? evaluations[winnerId] : undefined
 
     if (!winnerResult) return
 
@@ -243,13 +244,17 @@ export function SongCreator() {
       style_description: winnerResult.style,
       status: 'saved',
       user_id: (await supabase.auth.getUser()).data.user?.id,
-      artist_id: artistId
+      artist_id: artistId,
+      evaluation_data: winnerEvaluation || null,
+      winner_agent_id: winnerId,
+      winner_reason: winnerReason || null,
+      winner_analysis: winnerAnalysis || null
     })
 
     if (!error) {
       showToast(`"${winnerResult.name}" saved to library!`)
     } else {
-      showToast('Failed to save song', 'error')
+      showToast('Failed to save song: ' + error.message, 'error')
     }
   }
 

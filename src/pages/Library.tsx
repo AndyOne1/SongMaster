@@ -83,6 +83,8 @@ export function Library() {
           songName={selectedSong.name}
           style={selectedSong.style_description}
           lyrics={selectedSong.lyrics}
+          evaluation={selectedSong.evaluation_data}
+          winnerAnalysis={selectedSong.winner_analysis}
           onSave={handleSaveSong}
           onOverride={handleOverride}
           isWinner={true}
