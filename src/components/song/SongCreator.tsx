@@ -255,7 +255,8 @@ export function SongCreator() {
       evaluation_data: winnerEvaluation || null,
       winner_agent_id: winnerId,
       winner_reason: winnerReason || null,
-      winner_analysis: winnerAnalysis || null
+      winner_analysis: winnerAnalysis || null,
+      iteration_count: iterationCount
     })
 
     if (!error) {
