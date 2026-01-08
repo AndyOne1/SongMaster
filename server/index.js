@@ -137,6 +137,73 @@ async function callOpenRouter(model, messages, options = {}) {
   return parsed
 }
 
+// Helper function to build iteration prompt with feedback
+function buildIterationPrompt(basePrompt, iterationContext) {
+  const strengths = iterationContext.evaluation.strengths
+    .map(s => `- ${s}`)
+    .join('\n')
+
+  const weaknesses = iterationContext.evaluation.weaknesses
+    .map(w => `- ${w}`)
+    .join('\n')
+
+  const criticalFixes = iterationContext.evaluation.recommendations.critical_fixes
+    .map(r => `- ${r}`)
+    .join('\n')
+
+  const quickWins = iterationContext.evaluation.recommendations.quick_wins
+    .map(r => `- ${r}`)
+    .join('\n')
+
+  const depthEnhancements = iterationContext.evaluation.recommendations.depth_enhancements
+    .map(r => `- ${r}`)
+    .join('\n')
+
+  const sunoOptimization = iterationContext.evaluation.recommendations.suno_optimization
+    .map(r => `- ${r}`)
+    .join('\n')
+
+  return `${basePrompt}
+
+---
+
+## ITERATION CONTEXT (Previous Generation Feedback)
+
+Your previous generation of this song received the following evaluation:
+
+### STRENGTHS (Preserve these):
+${strengths}
+
+### WEAKNESSES (Improve these):
+${weaknesses}
+
+### RECOMMENDATIONS:
+
+Critical Fixes:
+${criticalFixes}
+
+Quick Wins:
+${quickWins}
+
+Depth Enhancements:
+${depthEnhancements}
+
+Suno Optimization:
+${sunoOptimization}
+
+---
+
+## TASK
+Improve this song based on the feedback above. Preserve the strengths while addressing the weaknesses and recommendations. The original request was:
+
+**Request:** ${iterationContext.original_request}
+**Style:** ${iterationContext.original_style}
+${iterationContext.custom_instructions ? `**Custom Instructions:** ${iterationContext.custom_instructions}` : ''}
+
+Iteration #${iterationContext.iteration_number}
+`
+}
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' })
@@ -144,7 +211,7 @@ app.get('/api/health', (req, res) => {
 
 // Generate song endpoint (multi-agent parallel generation)
 app.post('/api/generate', async (req, res) => {
-  const { song_id, agents, prompt, user_request, user_style } = req.body
+  const { song_id, agents, prompt, user_request, user_style, custom_instructions, iteration_context } = req.body
 
   if (!song_id || !agents || agents.length === 0) {
     return res.status(400).json({ error: 'song_id and agents required' })
@@ -181,6 +248,11 @@ Create an original song specification. Return JSON with:
 Return valid JSON only.`
   }
 
+  // Inject iteration context if present
+  if (iteration_context) {
+    systemPrompt = buildIterationPrompt(systemPrompt, iteration_context)
+  }
+
   try {
     // Call all agents in parallel
     const agentPromises = agents.map(async (agent) => {
@@ -188,7 +260,7 @@ Return valid JSON only.`
       try {
         const result = await callOpenRouter(
           agent.model_name,
-          [{ role: 'system', content: systemPrompt }, { role: 'user', content: user_request }],
+          [{ role: 'system', content: systemPrompt }, { role: 'user', content: `Request: ${user_request}${custom_instructions ? `\n\nCustom Instructions: ${custom_instructions}` : ''}` }],
           { maxTokens: 4000, extractFields: true }
         )
         console.log(`[generate] Agent ${agent.id} response:`, JSON.stringify(result).substring(0, 200))
