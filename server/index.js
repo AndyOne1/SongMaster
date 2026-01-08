@@ -72,7 +72,58 @@ async function callOpenRouter(model, messages, options = {}) {
   } catch (parseError) {
     // Try to salvage incomplete JSON by finding the last complete object
     console.log(`[openrouter] JSON parse error for ${model}, trying to salvage...`)
-    console.log(`[openrouter] Raw content length: ${content.length} chars`)
+    console.log(`[openrouter] Raw content length: ${content.length} chars, error at: ${parseError.message}`)
+
+    // For artist generation: handle array of objects with potential truncation
+    if (content.includes('"options"') || content.includes('"artists"')) {
+      try {
+        // Try to find and fix the options array
+        let fixed = content
+
+        // Remove any trailing text after the last complete object
+        const lastOpenBrace = fixed.lastIndexOf('{')
+        const lastCloseBrace = fixed.lastIndexOf('}')
+
+        if (lastCloseBrace > lastOpenBrace) {
+          // Find where the options array might end
+          const optionsMatch = fixed.match(/"options"\s*:\s*\[/)
+          if (optionsMatch) {
+            const optionsStart = optionsMatch.index + optionsMatch[0].length
+            // Count brackets to find where options array ends
+            let braceCount = 1
+            let i = optionsStart
+            while (braceCount > 0 && i < fixed.length) {
+              if (fixed[i] === '{') braceCount++
+              else if (fixed[i] === '}') braceCount--
+              i++
+            }
+            if (braceCount === 0) {
+              // Found complete options array
+              const optionsContent = fixed.substring(optionsStart, i)
+              const objectMatches = optionsContent.matchAll(/\{[^}]*\}/g)
+              const validObjects = []
+
+              for (const match of objectMatches) {
+                try {
+                  const obj = JSON.parse(match[0])
+                  validObjects.push(obj)
+                } catch {
+                  // Skip invalid objects
+                }
+              }
+
+              if (validObjects.length > 0) {
+                const salvaged = { options: validObjects }
+                console.log(`[openrouter] Salvaged ${validObjects.length} artist options from truncated JSON`)
+                return salvaged
+              }
+            }
+          }
+        }
+      } catch (salvageError) {
+        console.log(`[openrouter] Artist salvage attempt failed: ${salvageError.message}`)
+      }
+    }
 
     // For song generation: extract name/style/lyrics
     if (options.extractFields) {
@@ -378,73 +429,22 @@ app.post('/api/generate-artist', async (req, res) => {
     // Fetch system prompt from database or use fallback
     let systemPrompt = await fetchSystemPrompt('artist_generation')
 
+    console.log('Artist generation - prompt source:', systemPrompt ? 'database' : 'fallback')
+
     if (systemPrompt) {
       // Replace placeholders with actual values
       systemPrompt = systemPrompt
         .replace('{artist_type}', artistType || 'Solo Artist')
         .replace('{desired_style}', desiredStyle || 'Create an original style')
+      console.log('Using DB prompt, length:', systemPrompt.length)
     } else {
-      // Fallback prompt
-      systemPrompt = `You are an expert at creating unique fictional artists and bands. Generate 3 creative artist profiles based on the user input.
+      // Concise fallback prompt
+      systemPrompt = `Create 3 distinct artist profiles for: Artist Type: ${artistType || 'Solo Artist'}, Style: ${desiredStyle || 'original'}
 
-Input Variables:
-- Artist Type: ${artistType || 'Solo Artist'}
-- Desired Style: ${desiredStyle || 'Create an original style'}
+Return JSON: {"options": [{"artist_name":"Name","artist_type":"Solo Artist","tagline":"Essence in one sentence","origin_story":"Brief background","career_stage":"Emerging","musical_dna":{"core_genre":"Primary genre","signature_sound":"What makes them unique","tempo_range":"85-110 BPM","key_preferences":"E minor, A minor","production_style":"Clean atmospheric"},"lyrical_identity":{"writing_approach":"Direct/metaphorical","core_themes":["Theme 1","Theme 2"],"emotional_palette":"Melancholic","message":"Artistic mission"},"suno_guidelines":{"default_bpm":"85-95 BPM","preferred_keys":"E minor","standard_instrumentation":"Synth pads, sub bass","default_vocal_tags":["Female Vocal | Soft"],"avoid_tags":["Gritty"],"energy_variation":"Verses: 4/10, Chorus: 8/10"},"brand_identity":{"visual_aesthetic":"Color palette","target_audience":"Who connects"},"agent_brief":"Create songs as [Name]: [summary]","short_style_summary":"1-2 sentence style summary"}]}
 
-Return a JSON object with this structure:
-{
-  "options": [
-    {
-      "artist_name": "Artist/Band Name",
-      "artist_type": "Type of artist (e.g., Solo Artist, Band, Duo)",
-      "tagline": "Brief catchy description of their style",
-      "origin_story": "Detailed backstory of how the artist formed",
-      "career_stage": "Career stage (e.g., Emerging, Breakthrough, Established, Legendary)",
-      "musical_dna": {
-        "core_genre": "Primary genre",
-        "signature_sound": "What makes them sonically distinctive",
-        "mood_and_emotion": "Emotional quality of their music",
-        "influence_sources": ["Key influences"]
-      },
-      "instrumentation": {
-        "primary_instruments": ["List of main instruments"],
-        "production_techniques": "Production approach",
-        "unique_sonic_elements": "Special sonic characteristics"
-      },
-      "vocal_identity": {
-        "vocal_type": "Type of vocals (e.g., Male Tenor, Female Mezzo-Soprano)",
-        "vocal_characteristics": "What makes their voice distinctive",
-        "vocal_approach": "How they use vocals in songs"
-      },
-      "lyrical_identity": {
-        "writing_approach": "How lyrics are written",
-        "thematic_preferences": "Common themes in lyrics",
-        "narrative_style": "Storytelling approach"
-      },
-      "references": {
-        "sounds_like": ["Similar artists/bands"],
-        "comparable_projects": "Comparable projects or albums",
-        "fusion_elements": "Genre fusion elements"
-      },
-      "suno_guidelines": {
-        "default_bpm": "Recommended tempo",
-        "key_signature": "Recommended key",
-        "duration_range": "Typical song length",
-        "structure_preference": "Preferred song structure",
-        "tags_and_keywords": ["Suno tags for generation"]
-      },
-      "brand_identity": {
-        "visual_aesthetic": "Visual style and imagery",
-        "brand_values": ["Core brand values"],
-        "image_presentation": "How they present themselves"
-      },
-      "agent_brief": "Detailed brief for the artist agent about their style and requirements",
-      "short_style_summary": "Brief 1-2 sentence summary of their musical style"
-    }
-  ]
+Include variety and authentic-feeling identities. Keep JSON valid and complete.`
 }
-
-Be creative and varied with each option. Ensure each artist feels unique and authentic.`
     }
 
     const result = await callOpenRouter(
@@ -453,7 +453,7 @@ Be creative and varied with each option. Ensure each artist feels unique and aut
         { role: 'system', content: systemPrompt },
         { role: 'user', content: input || `Artist Type: ${artistType}\nDesired Style: ${desiredStyle}` }
       ],
-      { maxTokens: 3000 }
+      { maxTokens: 2000 }  // Reduced to prevent truncation
     )
 
     // Transform result to frontend format
