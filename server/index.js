@@ -430,7 +430,7 @@ app.post('/api/generate-artist', async (req, res) => {
       // Concise fallback prompt
       systemPrompt = `Create 3 distinct artist profiles for: Artist Type: ${artistType || 'Solo Artist'}, Style: ${desiredStyle || 'original'}
 
-Return JSON: {"options": [{"artist_name":"Name","artist_type":"Solo Artist","tagline":"Essence in one sentence","origin_story":"Brief background","career_stage":"Emerging","musical_dna":{"core_genre":"Primary genre","signature_sound":"What makes them unique","tempo_range":"85-110 BPM","key_preferences":"E minor, A minor","production_style":"Clean atmospheric"},"lyrical_identity":{"writing_approach":"Direct/metaphorical","core_themes":["Theme 1","Theme 2"],"emotional_palette":"Melancholic","message":"Artistic mission"},"suno_guidelines":{"default_bpm":"85-95 BPM","preferred_keys":"E minor","standard_instrumentation":"Synth pads, sub bass","default_vocal_tags":["Female Vocal | Soft"],"avoid_tags":["Gritty"],"energy_variation":"Verses: 4/10, Chorus: 8/10"},"brand_identity":{"visual_aesthetic":"Color palette","target_audience":"Who connects"},"agent_brief":"Create songs as [Name]: [summary]","short_style_summary":"1-2 sentence style summary"}]}
+Return JSON: {"options": [{"artist_name":"Name","tagline":"Essence in one sentence","style_description":"2-3 sentence detailed style description","special_characteristics":["Characteristic 1","Characteristic 2","Characteristic 3"],"origin_story":"Brief backstory (optional)","musical_dna":{"signature_sound":"What makes them unique"},"suno_guidelines":{"default_vocal_tags":["Tag 1","Tag 2"]}}]}
 
 Include variety and authentic-feeling identities. Keep JSON valid and complete.`
     }
@@ -448,22 +448,13 @@ Include variety and authentic-feeling identities. Keep JSON valid and complete.`
     const options = result.options || result.artists || []
 
     const transformedOptions = options.map(option => ({
-      name: option.artist_name || option.name,
-      style_description: option.tagline || option.style_description,
-      special_characteristics: option.agent_brief || option.short_style_summary || option.special_characteristics,
-      artist_type: option.artist_type,
+      name: option.artist_name,
+      style_description: option.style_description,
+      special_characteristics: option.special_characteristics,
       tagline: option.tagline,
       origin_story: option.origin_story,
-      career_stage: option.career_stage,
       musical_dna: option.musical_dna || {},
-      instrumentation: option.instrumentation || {},
-      vocal_identity: option.vocal_identity || {},
-      lyrical_identity: option.lyrical_identity || {},
-      references_data: option.references || {},
-      suno_guidelines: option.suno_guidelines || {},
-      brand_identity: option.brand_identity || {},
-      agent_brief: option.agent_brief,
-      short_style_summary: option.short_style_summary
+      suno_guidelines: option.suno_guidelines || {}
     }))
 
     res.json({ options: transformedOptions })

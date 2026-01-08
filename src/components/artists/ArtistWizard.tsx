@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Artist } from '../../types'
+import { Artist, ArtistOption } from '../../types'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
@@ -32,7 +32,7 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
   const [mode, setMode] = useState<WizardMode>('select')
   const [input, setInput] = useState('')
   const [generating, setGenerating] = useState(false)
-  const [generatedOptions, setGeneratedOptions] = useState<Artist[]>([])
+  const [generatedOptions, setGeneratedOptions] = useState<ArtistOption[]>([])
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [selectedAgent] = useState<AIAgent>({ id: 'gen-6', name: 'Grok', provider: 'xAI', model_name: 'x-ai/grok-4.1-fast' })
 
@@ -61,67 +61,43 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
       // Demo fallback with mock data
       setGeneratedOptions([
         {
-          id: 'demo-1',
-          user_id: 'demo',
-          name: 'Neon Horizon',
-          style_description: 'Synthwave band with dreamy 80s aesthetics and futuristic soundscapes',
-          special_characteristics: 'Retro synth leads and driving basslines',
-          artist_type: 'Band',
+          artist_name: 'Neon Horizon',
           tagline: 'Where retro meets the future',
+          style_description: 'Synthwave band with dreamy 80s aesthetics and futuristic soundscapes. Think The Midnight meets Gunship with modern production.',
+          special_characteristics: ['Retro synth leads', 'Driving basslines', 'Ethereal female vocals', 'Cinematic arrangements'],
           origin_story: 'Formed in Los Angeles in 2019, Neon Horizon emerged from a shared love of 80s cinema and modern electronic music.',
-          career_stage: 'Emerging',
-          musical_dna: '80s synthpop meets modern electronic production with cinematic undertones',
-          instrumentation: 'Analog synthesizers, drum machines, bass guitar, occasional guitar',
-          vocal_identity: 'Ethereal, breathy female vocals with harmonies',
-          lyrical_identity: 'Nostalgia, dreams, urban nights, sci-fi themes',
-          references_data: 'The Midnight, FM-84, Gunship - synthwave, 80s, electronic',
-          suno_guidelines: 'Focus on analog synth sounds, steady 4/4 beats, dreamy pads',
-          brand_identity: 'Retro-futuristic, neon aesthetics, VHS-style visuals',
-          agent_brief: 'Create authentic 80s-inspired synthwave with modern production values',
-          short_style_summary: 'Dreamy 80s synthwave with ethereal vocals',
-          created_at: new Date(),
+          musical_dna: {
+            signature_sound: 'Warm analog synths layered with modern electronic production'
+          },
+          suno_guidelines: {
+            default_vocal_tags: ['Female Vocal | Soft | Ethereal', 'Synthwave', '80s']
+          }
         },
         {
-          id: 'demo-2',
-          user_id: 'demo',
-          name: 'Velvet Echo',
-          style_description: 'Indie rock with psychedelic influences and introspective songwriting',
-          special_characteristics: 'Layered guitar textures and introspective lyrics',
-          artist_type: 'Solo Artist',
+          artist_name: 'Velvet Echo',
           tagline: 'Sound as a journey inward',
+          style_description: 'Indie rock with psychedelic influences and introspective songwriting. Layered guitar textures meet soulful vocals.',
+          special_characteristics: ['Layered guitar textures', 'Introspective lyrics', 'Psychedelic effects', 'Warm baritone vocals'],
           origin_story: 'Started as a bedroom project in Seattle, evolved into a full band with members from various local indie acts.',
-          career_stage: 'Mid-level',
-          musical_dna: 'Psychedelic rock meets indie pop with experimental edges',
-          instrumentation: 'Electric guitar, bass, drums, keyboards, strings',
-          vocal_identity: 'Warm baritone with soulful inflection and falsetto contrasts',
-          lyrical_identity: 'Self-reflection, nature, personal growth, abstract imagery',
-          references_data: 'Tame Impala, Arctic Monkeys, King Gizzard - indie, psychedelic, rock',
-          suno_guidelines: 'Add guitar solos, create psychedelic effects, variable tempo sections',
-          brand_identity: 'Psychedelic visuals, organic textures, intimate live shows',
-          agent_brief: 'Craft psychedelic indie rock with emotional depth and sonic experimentation',
-          short_style_summary: 'Psychedelic indie rock with introspective lyrics',
-          created_at: new Date(),
+          musical_dna: {
+            signature_sound: 'Psychedelic rock meets indie pop with experimental edges'
+          },
+          suno_guidelines: {
+            default_vocal_tags: ['Male Vocal | Warm | Baritone', 'Indie Rock', 'Psychedelic']
+          }
         },
         {
-          id: 'demo-3',
-          user_id: 'demo',
-          name: 'Crystal Waves',
-          style_description: 'Ambient electronic with nature sounds and meditative qualities',
-          special_characteristics: 'Ethereal vocals and organic soundscapes',
-          artist_type: 'Solo Artist',
+          artist_name: 'Crystal Waves',
           tagline: 'Nature as instrument, silence as rhythm',
+          style_description: 'Ambient electronic with nature sounds and meditative qualities. Ethereal soundscapes blend field recordings with electronic production.',
+          special_characteristics: ['Field recordings', 'Ethereal vocals', 'Organic soundscapes', 'Meditative'],
           origin_story: 'Created during a sabbatical in the Pacific Northwest, combining field recordings with electronic production.',
-          career_stage: 'Independent',
-          musical_dna: 'Ambient electronica blended with field recordings and acoustic elements',
-          instrumentation: 'Synthesizers, field recordings, piano, gentle percussion',
-          vocal_identity: 'Wordless, ethereal, processed into soundscapes',
-          lyrical_identity: 'Nature-focused, meditative, transcending language',
-          references_data: 'Brian Eno, Tycho, Bonobo - ambient, electronic, nature',
-          suno_guidelines: 'Slow tempo, minimal percussion, incorporate field recording concepts',
-          brand_identity: 'Earthy tones, nature imagery, wellness and meditation positioning',
-          agent_brief: 'Create ambient soundscapes that blend electronic and organic elements',
-          short_style_summary: 'Ambient electronic with nature sounds and ethereal vocals',
-          created_at: new Date(),
+          musical_dna: {
+            signature_sound: 'Ambient electronica blended with nature sounds'
+          },
+          suno_guidelines: {
+            default_vocal_tags: ['Ethereal | Wordless', 'Ambient', 'Nature Sounds']
+          }
         },
       ])
     } finally {
@@ -170,23 +146,14 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
 
     const { error } = await supabase.from('artists').insert({
       user_id: user.id,
-      name: selected.name,
+      name: selected.artist_name,
       style_description: selected.style_description,
-      special_characteristics: selected.special_characteristics,
-      // New fields from AI generation
-      artist_type: selected.artist_type,
+      special_characteristics: selected.special_characteristics.join(', '),
+      // New simplified fields from AI generation
       tagline: selected.tagline,
       origin_story: selected.origin_story,
-      career_stage: selected.career_stage,
       musical_dna: selected.musical_dna,
-      instrumentation: selected.instrumentation,
-      vocal_identity: selected.vocal_identity,
-      lyrical_identity: selected.lyrical_identity,
-      references_data: selected.references_data,
       suno_guidelines: selected.suno_guidelines,
-      brand_identity: selected.brand_identity,
-      agent_brief: selected.agent_brief,
-      short_style_summary: selected.short_style_summary,
     })
 
     if (error) {
@@ -293,21 +260,18 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h5 className="font-semibold text-gray-200">{option.name}</h5>
-                        {option.artist_type && (
-                          <span className="rounded-full bg-primary-600/30 px-2 py-0.5 text-xs text-primary-300">
-                            {option.artist_type}
-                          </span>
-                        )}
-                      </div>
+                      <h5 className="font-semibold text-gray-200">{option.artist_name}</h5>
                       {option.tagline && (
                         <p className="mt-1 text-sm text-primary-400 italic">{option.tagline}</p>
                       )}
                       <p className="mt-1 text-sm text-gray-400 line-clamp-2">{option.style_description}</p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        ✨ {option.short_style_summary || option.special_characteristics}
-                      </p>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {option.special_characteristics?.slice(0, 3).map((char, i) => (
+                          <span key={i} className="rounded bg-gray-700 px-2 py-0.5 text-xs text-gray-300">
+                            {char}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                     {selectedOption === index && <Check className="h-5 w-5 text-primary-400 shrink-0" />}
                   </div>

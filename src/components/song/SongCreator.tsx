@@ -155,8 +155,7 @@ export function SongCreator() {
       // Build artist context
       const artistContext = artist
         ? `Artist: ${artist.name}
-${artist.short_style_summary ? `Summary: ${artist.short_style_summary}` : ''}
-${artist.agent_brief ? `Agent Brief: ${artist.agent_brief}` : ''}
+${artist.tagline ? `Tagline: ${artist.tagline}` : ''}
 Style: ${artist.style_description}
 ${artist.special_characteristics ? `Characteristics: ${artist.special_characteristics}` : ''}`
         : ''
@@ -489,9 +488,9 @@ ${artist.special_characteristics ? `Characteristics: ${artist.special_characteri
           <div className="flex items-center gap-2">
             <p className="text-champagne-500">for</p>
             <span className="text-amber-400 font-medium">{artist.name}</span>
-            {artist.artist_type && (
+            {artist.tagline && (
               <span className="text-xs px-2 py-0.5 rounded bg-violet-500/10 text-violet-400">
-                {artist.artist_type}
+                {artist.tagline}
               </span>
             )}
           </div>

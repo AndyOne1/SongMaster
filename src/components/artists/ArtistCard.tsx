@@ -1,7 +1,6 @@
 import { Artist } from '../../types'
 import { Card } from '../ui/Card'
 import { Music, Edit2, Trash2 } from 'lucide-react'
-import { cn } from '../../lib/utils'
 
 interface ArtistCardProps {
   artist: Artist
@@ -10,19 +9,7 @@ interface ArtistCardProps {
   onDelete: () => void
 }
 
-const careerStageStyles: Record<string, { bg: string; text: string }> = {
-  Emerging: { bg: 'bg-amber-500/10', text: 'text-amber-400' },
-  Breakthrough: { bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
-  Established: { bg: 'bg-violet-500/10', text: 'text-violet-400' },
-  Legendary: { bg: 'bg-rose-500/10', text: 'text-rose-400' },
-}
-
 export function ArtistCard({ artist, onClick, onEdit, onDelete }: ArtistCardProps) {
-  const careerStageStyle = careerStageStyles[artist.career_stage || ''] || {
-    bg: 'bg-champagne-500/10',
-    text: 'text-champagne-500',
-  }
-
   return (
     <Card
       variant="default"
@@ -37,12 +24,6 @@ export function ArtistCard({ artist, onClick, onEdit, onDelete }: ArtistCardProp
           {artist.name}
         </h3>
 
-        {artist.artist_type && (
-          <span className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20">
-            {artist.artist_type}
-          </span>
-        )}
-
         {artist.tagline && (
           <p className="mt-2 text-sm text-champagne-500 italic line-clamp-1">
             {artist.tagline}
@@ -50,20 +31,8 @@ export function ArtistCard({ artist, onClick, onEdit, onDelete }: ArtistCardProp
         )}
 
         <p className="mt-2 text-sm text-ivory-300/80 line-clamp-2">
-          {artist.short_style_summary || artist.style_description}
+          {artist.style_description}
         </p>
-
-        {artist.career_stage && (
-          <span
-            className={cn(
-              'mt-3 inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider',
-              careerStageStyle.bg,
-              careerStageStyle.text
-            )}
-          >
-            {artist.career_stage}
-          </span>
-        )}
       </div>
 
       <div className="absolute right-3 top-3 flex opacity-0 transition-all duration-200 group-hover:opacity-100">

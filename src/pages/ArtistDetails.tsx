@@ -1,3 +1,4 @@
+import React from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { Artist } from '../types'
@@ -10,14 +11,8 @@ import {
   Trash2,
   Music2,
   Sparkles,
-  Mic2,
-  Palette,
   User,
-  Headphones,
-  BookOpen,
-  Target,
-  Briefcase,
-  Layers
+  Target
 } from 'lucide-react'
 
 interface ArtistDetailsProps {
@@ -45,7 +40,19 @@ export function ArtistDetails({ onEdit, onDelete }: ArtistDetailsProps) {
         console.error('Error fetching artist:', error)
         setArtist(null)
       } else {
-        setArtist(data as Artist)
+        // Cast with proper typing for Supabase JSONB fields
+        setArtist({
+          id: data.id as string,
+          user_id: data.user_id as string,
+          name: data.name as string,
+          style_description: data.style_description as string,
+          special_characteristics: data.special_characteristics as string,
+          created_at: new Date(data.created_at),
+          tagline: data.tagline as string | undefined,
+          origin_story: data.origin_story as string | undefined,
+          musical_dna: data.musical_dna as Artist['musical_dna'],
+          suno_guidelines: data.suno_guidelines as Artist['suno_guidelines'],
+        })
       }
       setLoading(false)
     }
@@ -83,25 +90,41 @@ export function ArtistDetails({ onEdit, onDelete }: ArtistDetailsProps) {
     )
   }
 
-  const parseJsonField = (field: string | undefined): Record<string, unknown> | null => {
+  // Parse JSON fields that might be stored as strings
+  const parseJsonField = (field: unknown): Record<string, unknown> | null => {
     if (!field) return null
+    if (typeof field === 'object') return field as Record<string, unknown>
     try {
-      return JSON.parse(field)
+      return JSON.parse(field as string)
     } catch {
       return null
     }
   }
 
   const musicalDna = parseJsonField(artist.musical_dna)
-  const instrumentation = parseJsonField(artist.instrumentation)
-  const vocalIdentity = parseJsonField(artist.vocal_identity)
-  const lyricalIdentity = parseJsonField(artist.lyrical_identity)
-  const referencesData = parseJsonField(artist.references_data)
   const sunoGuidelines = parseJsonField(artist.suno_guidelines)
-  const brandIdentity = parseJsonField(artist.brand_identity)
+
+  // Convert special_characteristics to array if it's a string
+  const specialChars = typeof artist.special_characteristics === 'string'
+    ? artist.special_characteristics.split(',').map(s => s.trim()).filter(Boolean)
+    : Array.isArray(artist.special_characteristics)
+      ? artist.special_characteristics
+      : []
+
+  // Extract style description for conditional rendering
+  const artistStyleDesc = typeof artist?.style_description === 'string' ? artist.style_description : ''
+  const styleDescriptionSection = (artistStyleDesc ? (
+    <Card className="mb-6">
+      <h2 className="font-display text-xl font-semibold text-ivory-100 mb-4 flex items-center gap-2">
+        <Target className="h-5 w-5 text-champagne-500" />
+        Style Description
+      </h2>
+      <p className="text-ivory-300 whitespace-pre-wrap">{artistStyleDesc}</p>
+    </Card>
+  ) : null) as React.ReactNode
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <button
@@ -112,29 +135,14 @@ export function ArtistDetails({ onEdit, onDelete }: ArtistDetailsProps) {
           Back to Artists
         </button>
 
-        <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-          <div>
-            <h1 className="font-display text-4xl font-semibold text-ivory-100 mb-4">
-              {artist.name}
-            </h1>
+        <div className="mb-4">
+          <h1 className="font-display text-4xl font-semibold text-ivory-100 mb-4">
+            {artist.name}
+          </h1>
 
-            <div className="flex flex-wrap gap-2 mb-4">
-              {artist.artist_type && (
-                <span className="px-3 py-1 rounded-full text-sm bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                  {artist.artist_type}
-                </span>
-              )}
-              {artist.career_stage && (
-                <span className="px-3 py-1 rounded-full text-sm bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                  {artist.career_stage}
-                </span>
-              )}
-            </div>
-
-            {artist.tagline && (
-              <p className="text-xl text-champagne-500 italic">{artist.tagline}</p>
-            )}
-          </div>
+          {artist.tagline && (
+            <p className="text-xl text-champagne-500 italic">{artist.tagline}</p>
+          )}
         </div>
 
         {artist.origin_story && (
@@ -158,175 +166,59 @@ export function ArtistDetails({ onEdit, onDelete }: ArtistDetailsProps) {
         </div>
       </div>
 
-      {/* Musical DNA */}
-      <Section title="Musical DNA" icon={<Music2 className="h-5 w-5" />}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Core Genre" value={musicalDna?.core_genre as string | undefined} />
-          <Field label="Signature Sound" value={musicalDna?.signature_sound as string | undefined} />
-          <Field label="Tempo Range" value={musicalDna?.tempo_range as string | undefined} />
-          <Field label="Key Preferences" value={musicalDna?.key_preferences as string | undefined} />
-          <Field label="Production Style" value={musicalDna?.production_style as string | undefined} className="md:col-span-2" />
-        </div>
-      </Section>
-
-      {/* Instrumentation */}
-      <Section title="Instrumentation" icon={<Layers className="h-5 w-5" />}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ArrayField label="Primary Instruments" value={instrumentation?.primary_instruments as string[] | undefined} />
-          <ArrayField label="Signature Instruments" value={instrumentation?.signature_instruments as string[] | undefined} />
-          <ArrayField label="Arrangement Style" value={instrumentation?.arrangement_style as string[] | undefined} />
-          <ArrayField label="Sonic Textures" value={instrumentation?.sonic_textures as string[] | undefined} />
-        </div>
-      </Section>
-
-      {/* Vocal Identity */}
-      <Section title="Vocal Identity" icon={<Mic2 className="h-5 w-5" />}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Vocal Type" value={vocalIdentity?.vocal_type as string | undefined} />
-          <Field label="Characteristics" value={vocalIdentity?.characteristics as string | undefined} />
-          <Field label="Delivery Style" value={vocalIdentity?.delivery_style as string | undefined} />
-          <Field label="Production" value={vocalIdentity?.production as string | undefined} />
-          <ArrayField label="Signature Techniques" value={vocalIdentity?.signature_techniques as string[] | undefined} className="md:col-span-2" />
-        </div>
-      </Section>
-
-      {/* Lyrical Identity */}
-      <Section title="Lyrical Identity" icon={<BookOpen className="h-5 w-5" />}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Writing Approach" value={lyricalIdentity?.writing_approach as string | undefined} />
-          <Field label="Vocabulary" value={lyricalIdentity?.vocabulary as string | undefined} />
-          <Field label="Rhyme Complexity" value={lyricalIdentity?.rhyme_complexity as string | undefined} />
-          <Field label="Perspective" value={lyricalIdentity?.perspective as string | undefined} />
-          <ArrayField label="Core Themes" value={lyricalIdentity?.core_themes as string[] | undefined} />
-          <ArrayField label="Emotional Palette" value={lyricalIdentity?.emotional_palette as string[] | undefined} />
-          <Field label="Message" value={lyricalIdentity?.message as string | undefined} className="md:col-span-2" />
-        </div>
-      </Section>
-
-      {/* References */}
-      <Section title="References" icon={<Headphones className="h-5 w-5" />}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <ArrayField label="Sounds Like" value={referencesData?.sounds_like as string[] | undefined} />
-          <ArrayField label="Influences" value={referencesData?.influences as string[] | undefined} />
-          <ArrayField label="Era/Movement" value={referencesData?.era_movement as string[] | undefined} />
-        </div>
-      </Section>
-
-      {/* Suno Guidelines */}
-      <Section title="Suno Guidelines" icon={<Sparkles className="h-5 w-5" />}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Field label="Default BPM" value={sunoGuidelines?.default_bpm as string | undefined} />
-          <Field label="Preferred Keys" value={sunoGuidelines?.preferred_keys as string | undefined} />
-          <Field label="Standard Instrumentation" value={sunoGuidelines?.standard_instrumentation as string | undefined} />
-          <Field label="Production Approach" value={sunoGuidelines?.production_approach as string | undefined} />
-          <Field label="Mix Balance" value={sunoGuidelines?.mix_balance as string | undefined} />
-          <Field label="Song Structure" value={sunoGuidelines?.song_structure as string | undefined} />
-          <Field label="Bridge Usage" value={sunoGuidelines?.bridge_usage as string | undefined} />
-          <Field label="Typical Length" value={sunoGuidelines?.typical_length as string | undefined} />
-          <Field label="Energy Variation" value={sunoGuidelines?.energy_variation as string | undefined} />
-          <ArrayField label="Default Vocal Tags" value={sunoGuidelines?.default_vocal_tags as string[] | undefined} />
-          <ArrayField label="Avoid Tags" value={sunoGuidelines?.avoid_tags as string[] | undefined} className="lg:col-span-2" />
-        </div>
-      </Section>
-
-      {/* Brand Identity */}
-      <Section title="Brand Identity" icon={<Palette className="h-5 w-5" />}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Visual Aesthetic" value={brandIdentity?.visual_aesthetic as string | undefined} />
-          <Field label="Image" value={brandIdentity?.image as string | undefined} />
-          <Field label="Album Artwork Style" value={brandIdentity?.album_artwork_style as string | undefined} />
-          <Field label="Target Audience" value={brandIdentity?.target_audience as string | undefined} />
-          <ArrayField label="Playlist Placement" value={brandIdentity?.playlist_placement as string[] | undefined} className="md:col-span-2" />
-        </div>
-      </Section>
-
-      {/* Agent Brief */}
-      {artist.agent_brief && (
-        <Section title="Agent Brief" icon={<Briefcase className="h-5 w-5" />}>
-          <div className="bg-luxury-800/50 rounded-xl p-4 border border-white/5">
-            <p className="text-ivory-300 whitespace-pre-wrap">{artist.agent_brief}</p>
-          </div>
-        </Section>
-      )}
-
-      {/* Original Style Description */}
-      {artist.style_description && (
-        <Section title="Style Description" icon={<Target className="h-5 w-5" />}>
-          <div className="bg-luxury-800/50 rounded-xl p-4 border border-white/5">
-            <p className="text-ivory-300 whitespace-pre-wrap">{artist.style_description}</p>
-          </div>
-        </Section>
-      )}
+      {/* Style Description */}
+      {styleDescriptionSection}
 
       {/* Special Characteristics */}
-      {artist.special_characteristics && (
-        <Section title="Special Characteristics" icon={<User className="h-5 w-5" />}>
-          <div className="bg-luxury-800/50 rounded-xl p-4 border border-white/5">
-            <p className="text-ivory-300 whitespace-pre-wrap">{artist.special_characteristics}</p>
+      {specialChars.length > 0 && (
+        <Card className="mb-6">
+          <h2 className="font-display text-xl font-semibold text-ivory-100 mb-4 flex items-center gap-2">
+            <User className="h-5 w-5 text-champagne-500" />
+            Special Characteristics
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {specialChars.map((char, index) => (
+              <span
+                key={index}
+                className="px-3 py-1 rounded-full text-sm bg-amber-500/10 text-amber-400 border border-amber-500/20"
+              >
+                {char}
+              </span>
+            ))}
           </div>
-        </Section>
+        </Card>
       )}
-    </div>
-  )
-}
 
-interface SectionProps {
-  title: string
-  icon: React.ReactNode
-  children: React.ReactNode
-}
+      {/* Musical DNA */}
+      {musicalDna && musicalDna.signature_sound && (
+        <Card className="mb-6">
+          <h2 className="font-display text-xl font-semibold text-ivory-100 mb-4 flex items-center gap-2">
+            <Music2 className="h-5 w-5 text-champagne-500" />
+            Musical DNA
+          </h2>
+          <p className="text-ivory-300">{musicalDna.signature_sound as string}</p>
+        </Card>
+      )}
 
-function Section({ title, icon, children }: SectionProps) {
-  return (
-    <Card className="mb-6">
-      <h2 className="font-display text-xl font-semibold text-ivory-100 mb-4 flex items-center gap-2">
-        {icon}
-        {title}
-      </h2>
-      {children}
-    </Card>
-  )
-}
-
-interface FieldProps {
-  label: string
-  value?: string
-  className?: string
-}
-
-function Field({ label, value, className = '' }: FieldProps) {
-  if (!value) return null
-
-  return (
-    <div className={className}>
-      <label className="block text-sm text-champagne-500 mb-1">{label}</label>
-      <p className="text-ivory-100">{value}</p>
-    </div>
-  )
-}
-
-interface ArrayFieldProps {
-  label: string
-  value?: string[]
-  className?: string
-}
-
-function ArrayField({ label, value, className = '' }: ArrayFieldProps) {
-  if (!value || value.length === 0) return null
-
-  return (
-    <div className={className}>
-      <label className="block text-sm text-champagne-500 mb-2">{label}</label>
-      <div className="flex flex-wrap gap-2">
-        {value.map((item, index) => (
-          <span
-            key={index}
-            className="px-3 py-1 rounded-full text-sm bg-amber-500/10 text-amber-400 border border-amber-500/20"
-          >
-            {item}
-          </span>
-        ))}
-      </div>
+      {/* Suno Guidelines */}
+      {sunoGuidelines?.default_vocal_tags ? (
+        <Card className="mb-6">
+          <h2 className="font-display text-xl font-semibold text-ivory-100 mb-4 flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-champagne-500" />
+            Suno Guidelines
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {(sunoGuidelines.default_vocal_tags as string[]).map((tag, index) => (
+              <span
+                key={index}
+                className="px-3 py-1 rounded-full text-sm bg-violet-500/10 text-violet-400 border border-violet-500/20"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </Card>
+      ) : null}
     </div>
   )
 }
