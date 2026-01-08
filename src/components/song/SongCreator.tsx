@@ -328,6 +328,7 @@ export function SongCreator() {
       let completedCount = 0
       const totalAgents = selectedAgentIds.length
       const generatePromises = selectedAgentIds.map(async (agentId) => {
+        const agent = agents.find(a => a.id === agentId)
         setAgentStatuses(prev => ({ ...prev, [agentId]: 'generating' }))
 
         try {
@@ -336,7 +337,7 @@ export function SongCreator() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               song_id: newSongId,
-              agents: [{ id: agentId }],
+              agents: [{ id: agentId, model_name: agent?.model_name }],
               user_request: iterationContext.original_request,
               user_style: iterationContext.original_style,
               custom_instructions: iterationContext.custom_instructions,
