@@ -110,25 +110,10 @@ export function SongCreator() {
       const selectedAgents = agents.filter(a => selectedAgentIds.includes(a.id))
       const orchestrator = agents.find(a => a.id === selectedOrchestratorId)
 
-      // Build prompt
+      // Build artist context
       const artistContext = artist
         ? `Artist: ${artist.name}\nStyle: ${artist.style_description}\nCharacteristics: ${artist.special_characteristics}`
-        : 'Create an original artist style'
-
-      const prompt = `You are a professional songwriter.
-
-Artist Context:
-${artistContext}
-
-Song Description: ${songDescription}
-Desired Style: ${styleDescription}
-
-Create an original song specification. Return JSON with:
-- name: Song title (max 50 chars)
-- style: Detailed music style description
-- lyrics: Complete song lyrics with verse/chorus structure
-
-Return valid JSON only.`
+        : ''
 
       // Call all agents in parallel
       const generatePromises = selectedAgents.map(async (agent) => {
@@ -141,9 +126,9 @@ Return valid JSON only.`
             body: JSON.stringify({
               song_id: newSongId,
               agents: [{ id: agent.id, model_name: agent.model_name }],
-              prompt,
               user_request: songDescription,
-              user_style: styleDescription
+              user_style: styleDescription,
+              artist_context: artistContext
             })
           })
 

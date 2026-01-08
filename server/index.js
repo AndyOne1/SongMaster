@@ -5,6 +5,35 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+// Supabase client for fetching system prompts
+const SUPABASE_URL = process.env.SUPABASE_URL
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
+
+async function fetchSystemPrompt(key) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    console.warn('Supabase credentials not set, using fallback prompts')
+    return null
+  }
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/system_prompts?key=eq.${key}&select=content`, {
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'apikey': SUPABASE_SERVICE_KEY
+      }
+    })
+    if (response.ok) {
+      const data = await response.json()
+      if (data && data[0]) {
+        return data[0].content
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch system prompt:', error)
+  }
+  return null
+}
+
 // Helper function to call OpenRouter
 async function callOpenRouter(model, messages, options = {}) {
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -65,12 +94,43 @@ app.post('/api/generate', async (req, res) => {
     return res.status(400).json({ error: 'song_id and agents required' })
   }
 
+  // Build artist context if artist info provided
+  const artistContext = req.body.artist_context || ''
+
+  // Fetch system prompt from database or use fallback
+  let systemPrompt = await fetchSystemPrompt('song_generation')
+
+  if (systemPrompt) {
+    // Replace placeholders with actual values
+    systemPrompt = systemPrompt
+      .replace('{artist_context}', artistContext || 'Create an original artist style')
+      .replace('{song_description}', user_request || '')
+      .replace('{style_description}', user_style || '')
+      .replace('{iteration_feedback}', '')
+  } else {
+    // Fallback prompt
+    systemPrompt = `You are a professional songwriter.
+
+Artist Context:
+${artistContext || 'Create an original artist style'}
+
+Song Description: ${user_request}
+Desired Style: ${user_style}
+
+Create an original song specification. Return JSON with:
+- name: Song title (max 50 chars)
+- style: Detailed music style description
+- lyrics: Complete song lyrics with verse/chorus structure
+
+Return valid JSON only.`
+  }
+
   try {
     // Call all agents in parallel
     const agentPromises = agents.map(async (agent) => {
       const result = await callOpenRouter(
         agent.model_name,
-        [{ role: 'user', content: prompt }],
+        [{ role: 'system', content: systemPrompt }, { role: 'user', content: user_request }],
         { maxTokens: 4000, extractFields: true }
       )
       return { agentId: agent.id, ...result }
@@ -151,21 +211,27 @@ app.post('/api/orchestrate', async (req, res) => {
   // Use provided model or fall back to environment variable or default
   const model = orchestrator_model_name || process.env.ORCHESTRATOR_MODEL || 'gpt-4o'
 
-  try {
-    // Build songs summary for evaluation
-    const songsSummary = Object.entries(songs).map(([agentId, song]) => {
-      const lyrics = song.lyrics || ''
-      return `[Agent: ${agentId}]
+  // Build songs summary for evaluation
+  const songsSummary = Object.entries(songs).map(([agentId, song]) => {
+    const lyrics = song.lyrics || ''
+    return `[Agent: ${agentId}]
 Name: ${song.name || 'Untitled'}
 Style: ${song.style || song.style_description || 'Unknown'}
 Lyrics: ${lyrics.substring(0, 500)}${lyrics.length > 500 ? '...' : ''}`
-    }).join('\n\n---\n\n')
+  }).join('\n\n---\n\n')
 
-    const result = await callOpenRouter(model,
-      [
-        {
-          role: 'system',
-          content: `You are an expert music producer. Evaluate these song specifications and score them.
+  // Fetch system prompt from database or use fallback
+  let systemPrompt = await fetchSystemPrompt('orchestrator')
+
+  if (systemPrompt) {
+    // Replace placeholders with actual values
+    systemPrompt = systemPrompt
+      .replace('{song_description}', user_request || '')
+      .replace('{style_description}', user_style || '')
+      .replace('{songs}', songsSummary)
+  } else {
+    // Fallback prompt
+    systemPrompt = `You are an expert music producer. Evaluate these song specifications and score them.
 
 # User Request
 Song Description: ${user_request}
@@ -200,7 +266,12 @@ Return JSON with this structure:
   "winner_agent_id": "agent_id_of_best_song",
   "winner_reason": "Why this song won (2-3 sentences)"
 }`
-        },
+  }
+
+  try {
+    const result = await callOpenRouter(model,
+      [
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Evaluate all songs and return structured JSON.' }
       ],
       { maxTokens: 3000 }
@@ -257,6 +328,7 @@ const HOST = process.env.HOST || '0.0.0.0'
 // Log startup info
 console.log('Starting SongMaster API...')
 console.log('OPENROUTER_API_KEY set:', !!process.env.OPENROUTER_API_KEY)
+console.log('SUPABASE_URL set:', !!SUPABASE_URL)
 console.log('PORT:', PORT)
 console.log('HOST:', HOST)
 console.log('NODE_ENV:', process.env.NODE_ENV)

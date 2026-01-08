@@ -13,6 +13,10 @@ primary_region = "iad"
   min_machines = 0
   max_machines = 2
 
+[env]
+  SUPABASE_URL = "https://cykjhksllhrkhxsrwzdd.supabase.co"
+  # Add SUPABASE_SERVICE_KEY via: fly secrets set SUPABASE_SERVICE_KEY=your-key
+
 [[vm]]
   size = "shared-cpu-1x"
   memory = "1gb"
