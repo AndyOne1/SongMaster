@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { Song } from '../types'
 import { Card } from '../components/ui/Card'
 import { SongDetailModal } from '../components/song/SongDetailModal'
-import { Music, Clock, Edit2 } from 'lucide-react'
+import { LibrarySongCard } from '../components/song/LibrarySongCard'
+import { Music } from 'lucide-react'
 import { supabase } from '../services/supabase/client'
 import { useAuth } from '../context/AuthContext'
 
@@ -62,38 +63,13 @@ export function Library() {
           <p className="text-gray-500">Create your first song to get started</p>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {songs.map((song) => (
-            <Card
+            <LibrarySongCard
               key={song.id}
-              className="flex items-center justify-between p-4 cursor-pointer hover:border-gray-500 transition-colors"
+              song={song}
               onClick={() => handleSongClick(song)}
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-700">
-                  <Music className="h-6 w-6 text-gray-400" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-200">{song.name}</h3>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {new Date(song.created_at).toLocaleDateString()}
-                    </span>
-                    <span className="capitalize">{song.status}</span>
-                  </div>
-                </div>
-              </div>
-              <button
-                className="rounded p-2 hover:bg-gray-700"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleSongClick(song)
-                }}
-              >
-                <Edit2 className="h-4 w-4 text-gray-400" />
-              </button>
-            </Card>
+            />
           ))}
         </div>
       )}
