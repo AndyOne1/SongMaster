@@ -138,7 +138,7 @@ async function callOpenRouter(model, messages, options = {}) {
 }
 
 // Helper function to build iteration prompt with feedback
-function buildIterationPrompt(basePrompt, iterationContext) {
+function buildIterationPrompt(basePrompt, iterationContext, baseSong) {
   const strengths = iterationContext.evaluation.strengths
     .map(s => `- ${s}`)
     .join('\n')
@@ -163,6 +163,18 @@ function buildIterationPrompt(basePrompt, iterationContext) {
     .map(r => `- ${r}`)
     .join('\n')
 
+  // Base song content (what we're iterating on)
+  const baseSongContent = baseSong
+    ? `
+
+## CURRENT SONG TO IMPROVE
+
+**Style:** ${baseSong.style}
+
+**Lyrics:**
+${baseSong.lyrics}`
+    : ''
+
   return `${basePrompt}
 
 ---
@@ -177,6 +189,7 @@ You are ITERATING on an existing song, not creating a new one. The goal is to IM
 3. KEEP the strengths intact - don't accidentally break what works
 4. MAKE MINIMAL CHANGES - targeted tweaks, not wholesale rewrites
 5. The song title should remain the same (it's preserved separately)
+6. You MUST use the CURRENT SONG content below as your starting point
 
 ### STRENGTHS (DO NOT CHANGE THESE):
 ${strengths}
@@ -198,11 +211,11 @@ ${depthEnhancements || 'None'}
 **SUNO OPTIMIZATION** (for better AI music generation):
 ${sunoOptimization || 'None'}
 
----
+---${baseSongContent}
 
 ## YOUR TASK
 
-Based on the user's original request and the feedback above, make MINIMAL changes to improve the song:
+Based on the user's original request, the feedback above, and the CURRENT SONG, make MINIMAL targeted changes:
 
 **ORIGINAL REQUEST:**
 ${iterationContext.original_request}
@@ -214,13 +227,14 @@ ${iterationContext.custom_instructions ? `
 **USER CUSTOM INSTRUCTIONS:**
 ${iterationContext.custom_instructions}` : ''}
 
-**Iteration instructions:**
+**Key instructions:**
+- Take the CURRENT SONG above and IMPROVE it based on the feedback
+- DO NOT ignore the current song - it is what you must iterate on
 - Address the critical fixes first
 - Apply quick wins where relevant
-- Only use depth enhancements if they don't conflict with preserving strengths
-- Keep suno optimization tips in mind for style description
+- Keep the overall structure and feel intact
 
-Remember: You are iterating, not starting fresh. Keep what works, fix what doesn't.
+Remember: You are iterating on an existing song. Use the current lyrics and style as your foundation.
 
 Iteration #${iterationContext.iteration_number}
 `
@@ -233,7 +247,7 @@ app.get('/api/health', (req, res) => {
 
 // Generate song endpoint (multi-agent parallel generation)
 app.post('/api/generate', async (req, res) => {
-  const { song_id, agents, prompt, user_request, user_style, custom_instructions, iteration_context, original_title, iteration_number } = req.body
+  const { song_id, agents, prompt, user_request, user_style, custom_instructions, iteration_context, original_title, iteration_number, base_song } = req.body
 
   if (!song_id || !agents || agents.length === 0) {
     return res.status(400).json({ error: 'song_id and agents required' })
@@ -241,6 +255,9 @@ app.post('/api/generate', async (req, res) => {
 
   // Build iteration title suffix
   const iterationSuffix = (iteration_number && iteration_number > 0) ? ` (Iteration #${iteration_number})` : ''
+
+  // Check if this is an iteration (has base song)
+  const isIteration = !!base_song
 
   // Build artist context if artist info provided
   const artistContext = req.body.artist_context || ''
@@ -275,7 +292,7 @@ Return valid JSON only.`
 
   // Inject iteration context if present
   if (iteration_context) {
-    systemPrompt = buildIterationPrompt(systemPrompt, iteration_context)
+    systemPrompt = buildIterationPrompt(systemPrompt, iteration_context, base_song)
   }
 
   try {

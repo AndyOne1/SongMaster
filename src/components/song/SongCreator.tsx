@@ -327,13 +327,14 @@ export function SongCreator() {
       // Call all agents in parallel with iteration context
       let completedCount = 0
       const totalAgents = selectedAgentIds.length
+
+      // Get the winning song content to iterate on
+      const effectiveWinnerId = overrideAgentId || winnerAgentId
+      const winnerSong = effectiveWinnerId ? agentResults[effectiveWinnerId] : null
+
       const generatePromises = selectedAgentIds.map(async (agentId) => {
         const agent = agents.find(a => a.id === agentId)
         setAgentStatuses(prev => ({ ...prev, [agentId]: 'generating' }))
-
-        // Get original song title from winner for iteration
-        const effectiveWinnerId = overrideAgentId || winnerAgentId
-        const originalTitle = effectiveWinnerId ? agentResults[effectiveWinnerId]?.name : undefined
 
         try {
           const response = await fetch(`${BACKEND_URL}/api/generate`, {
@@ -346,8 +347,13 @@ export function SongCreator() {
               user_style: iterationContext.original_style,
               custom_instructions: iterationContext.custom_instructions,
               iteration_context: iterationContext,
-              original_title: originalTitle,
-              iteration_number: iterationContext.iteration_number
+              original_title: winnerSong?.name,
+              iteration_number: iterationContext.iteration_number,
+              // Pass the actual winning song content to iterate on
+              base_song: winnerSong ? {
+                lyrics: winnerSong.lyrics,
+                style: winnerSong.style
+              } : undefined
             })
           })
 
