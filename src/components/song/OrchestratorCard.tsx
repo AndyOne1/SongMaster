@@ -30,6 +30,7 @@ interface OrchestratorCardProps {
   onIterate: (customInstruction?: string) => void
   onNewSong: () => void
   winnerAnalysis?: WinnerAnalysis | null
+  iterationCount?: number
 }
 
 const statusMessages: Record<string, string> = {
@@ -172,7 +173,7 @@ export function OrchestratorCard({
               className="w-full"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              Iterate on Song
+              {iterationCount > 0 ? `Iterate Again (#${iterationCount})` : 'Iterate on Song'}
             </Button>
             <button
               onClick={() => setShowCustomInstruction(!showCustomInstruction)}
