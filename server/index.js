@@ -128,33 +128,53 @@ Return valid JSON only.`
   try {
     // Call all agents in parallel
     const agentPromises = agents.map(async (agent) => {
-      const result = await callOpenRouter(
-        agent.model_name,
-        [{ role: 'system', content: systemPrompt }, { role: 'user', content: user_request }],
-        { maxTokens: 4000, extractFields: true }
-      )
-      return { agentId: agent.id, ...result }
+      console.log(`[generate] Calling agent ${agent.id} (${agent.model_name})...`)
+      try {
+        const result = await callOpenRouter(
+          agent.model_name,
+          [{ role: 'system', content: systemPrompt }, { role: 'user', content: user_request }],
+          { maxTokens: 4000, extractFields: true }
+        )
+        console.log(`[generate] Agent ${agent.id} response:`, JSON.stringify(result).substring(0, 200))
+        return { agentId: agent.id, ...result }
+      } catch (err) {
+        console.error(`[generate] Agent ${agent.id} failed:`, err.message)
+        return { agentId: agent.id, error: err.message }
+      }
     })
 
     const results = await Promise.allSettled(agentPromises)
 
     // Collect successful results
     const completedResults = {}
+    const failedAgents = []
     for (const result of results) {
       if (result.status === 'fulfilled' && result.value) {
-        completedResults[result.value.agentId] = {
-          name: result.value.name,
-          style: result.value.style,
-          lyrics: result.value.lyrics
+        if (result.value.error) {
+          failedAgents.push({ agentId: result.value.agentId, error: result.value.error })
+        } else if (result.value.name && result.value.lyrics) {
+          completedResults[result.value.agentId] = {
+            name: result.value.name,
+            style: result.value.style,
+            lyrics: result.value.lyrics
+          }
+        } else {
+          failedAgents.push({ agentId: result.value.agentId, error: 'Missing name or lyrics' })
         }
+      } else if (result.status === 'rejected') {
+        console.error(`[generate] Agent rejected:`, result.reason)
+        failedAgents.push({ error: result.reason?.message || 'Unknown error' })
       }
     }
+
+    console.log(`[generate] Completed: ${Object.keys(completedResults).length}, Failed: ${failedAgents.length}`)
 
     res.json({
       song_id,
       results: completedResults,
       completed_count: Object.keys(completedResults).length,
-      failed_count: agents.length - Object.keys(completedResults).length
+      failed_count: failedAgents.length,
+      failed_agents: failedAgents
     })
   } catch (error) {
     console.error('Generation error:', error)

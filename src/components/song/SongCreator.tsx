@@ -145,6 +145,11 @@ export function SongCreator() {
           const data = await response.json()
           setAgentStatuses(prev => ({ ...prev, [agent.id]: 'done' }))
 
+          // Track failed agents from response
+          if (data.failed_agents && data.failed_agents.length > 0) {
+            console.log('Failed agents:', data.failed_agents)
+          }
+
           if (data.results && data.results[agent.id]) {
             return { agentId: agent.id, result: data.results[agent.id] }
           }
@@ -331,6 +336,11 @@ export function SongCreator() {
               <span className="text-gray-400">
                 {Object.keys(agentResults).length} song(s) generated
               </span>
+              {selectedAgentIds.length > Object.keys(agentResults).length && (
+                <span className="text-xs text-red-400 bg-red-500/10 px-2 py-0.5 rounded">
+                  {selectedAgentIds.length - Object.keys(agentResults).length} failed
+                </span>
+              )}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
