@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Agent, Artist, DetailedEvaluation } from '../../types'
 import { IterationContext } from '../../types/song'
 import { AgentSelectionPanel } from './AgentSelectionPanel'
+import { InputHistory } from './InputHistory'
 import { AgentCard } from './AgentCard'
 import { OrchestratorCard } from './OrchestratorCard'
 import { SongDetailModal } from './SongDetailModal'
@@ -109,8 +110,20 @@ export function SongCreator() {
     setStep('input')
   }
 
+  const handleSelectFromHistory = (songDesc: string, styleDesc: string) => {
+    setSongDescription(songDesc)
+    setStyleDescription(styleDesc)
+  }
+
   const handleGenerate = async () => {
     if (selectedAgentIds.length === 0 || !selectedOrchestratorId) return
+
+    // Save inputs to history
+    if (songDescription.trim() || styleDescription.trim()) {
+      import('./InputHistory').then(({ saveInputToHistory }) => {
+        saveInputToHistory(songDescription, styleDescription, artist?.name)
+      })
+    }
 
     setStep('generating')
     setAgentResults({})
@@ -511,29 +524,38 @@ export function SongCreator() {
 
       {/* Input Phase */}
       {step === 'input' && (
-        <>
-          <Card className="mb-6">
-            <SongDescriptionInputs
-              artist={artist}
-              songDescription={songDescription}
-              styleDescription={styleDescription}
-              onSongDescriptionChange={setSongDescription}
-              onStyleDescriptionChange={setStyleDescription}
-            />
-          </Card>
+        <div className="flex gap-6">
+          <div className="flex-1">
+            <Card className="mb-6">
+              <SongDescriptionInputs
+                artist={artist}
+                songDescription={songDescription}
+                styleDescription={styleDescription}
+                onSongDescriptionChange={setSongDescription}
+                onStyleDescriptionChange={setStyleDescription}
+              />
+            </Card>
 
-          <div className="flex justify-center">
-            <Button
-              size="lg"
-              onClick={handleGenerate}
-              disabled={!songDescription.trim() || !styleDescription.trim()}
-              className="px-8"
-            >
-              <Play className="mr-2 h-5 w-5" />
-              Generate Song
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                size="lg"
+                onClick={handleGenerate}
+                disabled={!songDescription.trim() || !styleDescription.trim()}
+                className="px-8"
+              >
+                <Play className="mr-2 h-5 w-5" />
+                Generate Song
+              </Button>
+            </div>
           </div>
-        </>
+
+          {/* Input History */}
+          <InputHistory
+            songDescription={songDescription}
+            styleDescription={styleDescription}
+            onSelect={handleSelectFromHistory}
+          />
+        </div>
       )}
 
       {/* Results Phase */}
