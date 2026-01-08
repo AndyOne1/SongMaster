@@ -120,3 +120,26 @@ export interface Evaluation {
   evaluation?: string
   recommendations?: string
 }
+
+export interface IterationContext {
+  evaluation: {
+    strengths: string[]
+    weaknesses: string[]
+    recommendations: {
+      critical_fixes: string[]
+      quick_wins: string[]
+      depth_enhancements: string[]
+      suno_optimization: string[]
+    }
+    scores?: {
+      music_style: number
+      lyrics: number
+      originality: number
+      cohesion: number
+    }
+  }
+  original_request: string
+  original_style: string
+  custom_instructions?: string
+  iteration_number: number
+}
