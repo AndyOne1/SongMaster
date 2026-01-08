@@ -16,35 +16,50 @@ export function SongDescriptionInputs({
   onStyleDescriptionChange,
 }: SongDescriptionInputsProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Song Description */}
       <div>
-        <label className="mb-2 block text-sm font-medium text-gray-300">Describe the song you want</label>
+        <label className="mb-3 block text-sm font-medium text-ivory-200">
+          Describe your song
+        </label>
         <textarea
           value={songDescription}
           onChange={(e) => onSongDescriptionChange(e.target.value)}
-          placeholder="What should this song be about? What emotions should it convey?"
-          className="min-h-[100px] w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-gray-100 placeholder:text-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          placeholder="What story do you want to tell? What emotions should this song convey?"
+          className="min-h-[140px] w-full rounded-xl border border-white/10 bg-luxury-900/60 p-4 text-ivory-100 placeholder:text-champagne-500/40 focus:border-amber-500/30 focus:outline-none focus:ring-2 focus:ring-amber-500/10 transition-all resize-none"
         />
       </div>
 
+      {/* Style Description */}
       <div>
         {artist && (
-          <div className="mb-2 rounded-lg border border-gray-700 bg-gray-800/50 p-3">
-            <div className="mb-1 text-xs font-medium text-gray-500 uppercase">Artist Style Context</div>
-            <p className="text-sm text-gray-300">{artist.style_description}</p>
+          <div className="mb-3 rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-transparent p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-500/20">
+                <span className="text-xs text-violet-400">🎨</span>
+              </div>
+              <span className="text-xs font-medium text-violet-400 uppercase tracking-wider">Artist Style Context</span>
+            </div>
+            <p className="text-sm text-ivory-300 leading-relaxed">{artist.style_description}</p>
             {artist.special_characteristics && (
-              <p className="mt-1 text-xs text-gray-500">✨ {artist.special_characteristics}</p>
+              <p className="mt-2 text-xs text-champagne-500 flex items-center gap-1">
+                <span className="text-violet-400">✨</span>
+                {artist.special_characteristics}
+              </p>
             )}
           </div>
         )}
-        <label className="mb-2 block text-sm font-medium text-gray-300">
-          {artist ? 'Add or modify style description' : 'Music Style Description'}
+        <label className="mb-3 block text-sm font-medium text-ivory-200">
+          {artist ? 'Adapt or override style' : 'Music style description'}
         </label>
         <textarea
           value={styleDescription}
           onChange={(e) => onStyleDescriptionChange(e.target.value)}
-          placeholder={artist ? 'How should the artist style be adapted for this song?' : 'Describe the desired music style...'}
-          className="min-h-[80px] w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-gray-100 placeholder:text-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          placeholder={artist
+            ? "How should the artist's style be adapted for this song? (Leave empty to use artist defaults)"
+            : "Describe the desired music style: genre, tempo, mood, instrumentation..."
+          }
+          className="min-h-[100px] w-full rounded-xl border border-white/10 bg-luxury-900/60 p-4 text-ivory-100 placeholder:text-champagne-500/40 focus:border-amber-500/30 focus:outline-none focus:ring-2 focus:ring-amber-500/10 transition-all resize-none"
         />
       </div>
     </div>

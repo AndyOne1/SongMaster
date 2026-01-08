@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ToastProvider } from './components/ui/Toast'
 import { Layout } from './components/layout/Layout'
@@ -7,9 +7,11 @@ import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 import { Home } from './pages/Home'
 import { Artists } from './pages/Artists'
+import { ArtistDetails } from './pages/ArtistDetails'
 import { SongCreatorPage } from './pages/SongCreator'
 import { Library } from './pages/Library'
 import { Settings } from './pages/Settings'
+import { supabase } from './services/supabase/client'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -31,6 +33,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppContent() {
   const { user } = useAuth()
+  const navigate = useNavigate()
 
   return (
     <Routes>
@@ -56,6 +59,24 @@ function AppContent() {
           <ProtectedRoute>
             <Layout>
               <Artists />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/artists/:id"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ArtistDetails
+                onEdit={(artist) => {
+                  navigate(`/artists?edit=${artist.id}`)
+                }}
+                onDelete={async (id) => {
+                  await supabase.from('artists').delete().eq('id', id)
+                  navigate('/artists')
+                }}
+              />
             </Layout>
           </ProtectedRoute>
         }

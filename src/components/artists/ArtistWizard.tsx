@@ -64,24 +64,63 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
           id: 'demo-1',
           user_id: 'demo',
           name: 'Neon Horizon',
-          style_description: 'Synthwave band with dreamy 80s aesthetics',
+          style_description: 'Synthwave band with dreamy 80s aesthetics and futuristic soundscapes',
           special_characteristics: 'Retro synth leads and driving basslines',
+          artist_type: 'Band',
+          tagline: 'Where retro meets the future',
+          origin_story: 'Formed in Los Angeles in 2019, Neon Horizon emerged from a shared love of 80s cinema and modern electronic music.',
+          career_stage: 'Emerging',
+          musical_dna: '80s synthpop meets modern electronic production with cinematic undertones',
+          instrumentation: 'Analog synthesizers, drum machines, bass guitar, occasional guitar',
+          vocal_identity: 'Ethereal, breathy female vocals with harmonies',
+          lyrical_identity: 'Nostalgia, dreams, urban nights, sci-fi themes',
+          references_data: 'The Midnight, FM-84, Gunship - synthwave, 80s, electronic',
+          suno_guidelines: 'Focus on analog synth sounds, steady 4/4 beats, dreamy pads',
+          brand_identity: 'Retro-futuristic, neon aesthetics, VHS-style visuals',
+          agent_brief: 'Create authentic 80s-inspired synthwave with modern production values',
+          short_style_summary: 'Dreamy 80s synthwave with ethereal vocals',
           created_at: new Date(),
         },
         {
           id: 'demo-2',
           user_id: 'demo',
           name: 'Velvet Echo',
-          style_description: 'Indie rock with psychedelic influences',
+          style_description: 'Indie rock with psychedelic influences and introspective songwriting',
           special_characteristics: 'Layered guitar textures and introspective lyrics',
+          artist_type: 'Solo Artist',
+          tagline: 'Sound as a journey inward',
+          origin_story: 'Started as a bedroom project in Seattle, evolved into a full band with members from various local indie acts.',
+          career_stage: 'Mid-level',
+          musical_dna: 'Psychedelic rock meets indie pop with experimental edges',
+          instrumentation: 'Electric guitar, bass, drums, keyboards, strings',
+          vocal_identity: 'Warm baritone with soulful inflection and falsetto contrasts',
+          lyrical_identity: 'Self-reflection, nature, personal growth, abstract imagery',
+          references_data: 'Tame Impala, Arctic Monkeys, King Gizzard - indie, psychedelic, rock',
+          suno_guidelines: 'Add guitar solos, create psychedelic effects, variable tempo sections',
+          brand_identity: 'Psychedelic visuals, organic textures, intimate live shows',
+          agent_brief: 'Craft psychedelic indie rock with emotional depth and sonic experimentation',
+          short_style_summary: 'Psychedelic indie rock with introspective lyrics',
           created_at: new Date(),
         },
         {
           id: 'demo-3',
           user_id: 'demo',
           name: 'Crystal Waves',
-          style_description: 'Ambient electronic with nature sounds',
+          style_description: 'Ambient electronic with nature sounds and meditative qualities',
           special_characteristics: 'Ethereal vocals and organic soundscapes',
+          artist_type: 'Solo Artist',
+          tagline: 'Nature as instrument, silence as rhythm',
+          origin_story: 'Created during a sabbatical in the Pacific Northwest, combining field recordings with electronic production.',
+          career_stage: 'Independent',
+          musical_dna: 'Ambient electronica blended with field recordings and acoustic elements',
+          instrumentation: 'Synthesizers, field recordings, piano, gentle percussion',
+          vocal_identity: 'Wordless, ethereal, processed into soundscapes',
+          lyrical_identity: 'Nature-focused, meditative, transcending language',
+          references_data: 'Brian Eno, Tycho, Bonobo - ambient, electronic, nature',
+          suno_guidelines: 'Slow tempo, minimal percussion, incorporate field recording concepts',
+          brand_identity: 'Earthy tones, nature imagery, wellness and meditation positioning',
+          agent_brief: 'Create ambient soundscapes that blend electronic and organic elements',
+          short_style_summary: 'Ambient electronic with nature sounds and ethereal vocals',
           created_at: new Date(),
         },
       ])
@@ -134,6 +173,20 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
       name: selected.name,
       style_description: selected.style_description,
       special_characteristics: selected.special_characteristics,
+      // New fields from AI generation
+      artist_type: selected.artist_type,
+      tagline: selected.tagline,
+      origin_story: selected.origin_story,
+      career_stage: selected.career_stage,
+      musical_dna: selected.musical_dna,
+      instrumentation: selected.instrumentation,
+      vocal_identity: selected.vocal_identity,
+      lyrical_identity: selected.lyrical_identity,
+      references_data: selected.references_data,
+      suno_guidelines: selected.suno_guidelines,
+      brand_identity: selected.brand_identity,
+      agent_brief: selected.agent_brief,
+      short_style_summary: selected.short_style_summary,
     })
 
     if (error) {
@@ -239,14 +292,24 @@ export function ArtistWizard({ artist, onClose, onSave }: ArtistWizardProps) {
                   onClick={() => setSelectedOption(index)}
                 >
                   <div className="flex items-start justify-between">
-                    <div>
-                      <h5 className="font-semibold text-gray-200">{option.name}</h5>
-                      <p className="mt-1 text-sm text-gray-400">{option.style_description}</p>
-                      {option.special_characteristics && (
-                        <p className="mt-1 text-xs text-gray-500">✨ {option.special_characteristics}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h5 className="font-semibold text-gray-200">{option.name}</h5>
+                        {option.artist_type && (
+                          <span className="rounded-full bg-primary-600/30 px-2 py-0.5 text-xs text-primary-300">
+                            {option.artist_type}
+                          </span>
+                        )}
+                      </div>
+                      {option.tagline && (
+                        <p className="mt-1 text-sm text-primary-400 italic">{option.tagline}</p>
                       )}
+                      <p className="mt-1 text-sm text-gray-400 line-clamp-2">{option.style_description}</p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        ✨ {option.short_style_summary || option.special_characteristics}
+                      </p>
                     </div>
-                    {selectedOption === index && <Check className="h-5 w-5 text-primary-400" />}
+                    {selectedOption === index && <Check className="h-5 w-5 text-primary-400 shrink-0" />}
                   </div>
                 </Card>
               ))}

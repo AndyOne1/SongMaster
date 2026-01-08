@@ -11,27 +11,27 @@ interface LibrarySongCardProps {
 export function LibrarySongCard({ song, onClick }: LibrarySongCardProps) {
   return (
     <Card
-      className="cursor-pointer transition-all hover:border-gray-500 hover:bg-gray-800/50"
+      className="cursor-pointer p-5 group hover:border-amber-500/30"
       onClick={onClick}
     >
       {/* Header with icon */}
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-lg bg-primary-600/20 flex items-center justify-center">
-          <Music className="h-5 w-5 text-primary-400" />
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-violet-500/20 flex items-center justify-center border border-white/10 group-hover:scale-105 transition-transform duration-300">
+          <Music className="h-6 w-6 text-amber-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-gray-200 truncate">{song.name}</h3>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <span className="flex items-center gap-1">
+          <h3 className="font-display font-medium text-ivory-100 truncate">{song.name}</h3>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="flex items-center gap-1 text-xs text-champagne-500">
               <Calendar className="h-3 w-3" />
               {new Date(song.created_at).toLocaleDateString()}
             </span>
             <span className={cn(
-              'px-1.5 py-0.5 rounded text-[10px] uppercase',
-              song.status === 'saved' && 'bg-green-500/20 text-green-400',
-              song.status === 'completed' && 'bg-blue-500/20 text-blue-400',
-              song.status === 'draft' && 'bg-gray-500/20 text-gray-400',
-              song.status === 'iterating' && 'bg-yellow-500/20 text-yellow-400'
+              'px-2 py-0.5 rounded text-[10px] uppercase font-medium tracking-wider',
+              song.status === 'saved' && 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+              song.status === 'completed' && 'bg-violet-500/10 text-violet-400 border border-violet-500/20',
+              song.status === 'draft' && 'bg-champagne-500/10 text-champagne-500 border border-champagne-500/20',
+              song.status === 'iterating' && 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
             )}>
               {song.status}
             </span>
@@ -41,16 +41,16 @@ export function LibrarySongCard({ song, onClick }: LibrarySongCardProps) {
 
       {/* Style preview */}
       {song.style_description && (
-        <div className="mb-3">
-          <p className="text-sm text-gray-400 line-clamp-2">{song.style_description}</p>
+        <div className="mb-4">
+          <p className="text-sm text-ivory-300 line-clamp-2 leading-relaxed">{song.style_description}</p>
         </div>
       )}
 
       {/* Lyrics preview */}
       {song.lyrics && (
-        <div className="flex items-start gap-2 pt-2 border-t border-gray-700/50">
-          <FileText className="h-3 w-3 text-gray-600 mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-gray-600 line-clamp-2">{song.lyrics}</p>
+        <div className="flex items-start gap-2 pt-3 border-t border-white/5">
+          <FileText className="h-4 w-4 text-champagne-500 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-champagne-500 line-clamp-2 leading-relaxed">{song.lyrics}</p>
         </div>
       )}
     </Card>

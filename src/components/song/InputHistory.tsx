@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Card } from '../ui/Card'
 import { History, Trash2 } from 'lucide-react'
+import { cn } from '../../lib/utils'
 
 interface InputHistoryItem {
   timestamp: number
@@ -32,26 +33,6 @@ export function InputHistory({ songDescription, styleDescription, onSelect }: In
     }
   }, [])
 
-  const saveToHistory = (songDesc: string, styleDesc: string) => {
-    if (!songDesc.trim() && !styleDesc.trim()) return
-
-    const newItem: InputHistoryItem = {
-      timestamp: Date.now(),
-      songDescription: songDesc,
-      styleDescription: styleDesc,
-      artistName: undefined // Could add artist name if needed
-    }
-
-    // Remove duplicates and add new item at the beginning
-    const filtered = history.filter(
-      item => item.songDescription !== songDesc || item.styleDescription !== styleDesc
-    )
-    const updated = [newItem, ...filtered].slice(0, MAX_ITEMS)
-
-    setHistory(updated)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-  }
-
   const removeItem = (timestamp: number) => {
     const updated = history.filter(item => item.timestamp !== timestamp)
     setHistory(updated)
@@ -72,21 +53,26 @@ export function InputHistory({ songDescription, styleDescription, onSelect }: In
     return text.length > maxLength ? text.slice(0, maxLength) + '...' : text
   }
 
-  // Don't save current input to history (avoid duplicates while typing)
   const currentInput = { songDescription, styleDescription }
 
   return (
     <div className="w-64 flex-shrink-0">
-      <div className="flex items-center gap-2 mb-3">
-        <History className="h-4 w-4 text-gray-400" />
-        <h3 className="font-medium text-gray-200">Recent Inputs</h3>
+      <div className="flex items-center gap-2 mb-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-luxury-800 border border-white/10">
+          <History className="h-4 w-4 text-champagne-500" />
+        </div>
+        <h3 className="font-display font-medium text-ivory-100">Recent Inputs</h3>
       </div>
 
       {history.length === 0 ? (
-        <Card className="p-4 text-center text-sm text-gray-500">
-          No previous inputs yet.
-          <br />
-          Inputs will appear here after you generate.
+        <Card className="p-6 text-center">
+          <div className="flex justify-center mb-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-luxury-800 border border-white/5">
+              <History className="h-5 w-5 text-champagne-500/50" />
+            </div>
+          </div>
+          <p className="text-sm text-champagne-500 mb-1">No previous inputs yet</p>
+          <p className="text-xs text-champagne-500/50">Inputs will appear here after you generate</p>
         </Card>
       ) : (
         <div className="space-y-2">
@@ -98,26 +84,27 @@ export function InputHistory({ songDescription, styleDescription, onSelect }: In
             return (
               <Card
                 key={item.timestamp}
-                className={`group p-3 cursor-pointer transition-colors ${
+                className={cn(
+                  'cursor-pointer p-3 transition-all duration-300 group',
                   isActive
-                    ? 'border-primary-500 bg-primary-500/10'
-                    : 'border-gray-700 hover:border-gray-600'
-                }`}
+                    ? 'border-violet-500/30 bg-violet-500/5'
+                    : 'border-white/10 hover:border-white/20 hover:bg-luxury-800/50'
+                )}
                 onClick={() => onSelect(item.songDescription, item.styleDescription)}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">
+                    <p className="text-[10px] text-champagne-500 mb-1.5 uppercase tracking-wider">
                       {formatDate(item.timestamp)}
                     </p>
                     {item.songDescription && (
-                      <p className="text-sm text-gray-300 mb-1 line-clamp-2">
-                        {truncate(item.songDescription, 50)}
+                      <p className="text-sm text-ivory-200 mb-1.5 line-clamp-2 leading-relaxed">
+                        {truncate(item.songDescription, 60)}
                       </p>
                     )}
                     {item.styleDescription && (
-                      <p className="text-xs text-gray-500 line-clamp-1">
-                        Style: {truncate(item.styleDescription, 40)}
+                      <p className="text-xs text-champagne-500 line-clamp-1">
+                        Style: {truncate(item.styleDescription, 45)}
                       </p>
                     )}
                   </div>
@@ -126,9 +113,9 @@ export function InputHistory({ songDescription, styleDescription, onSelect }: In
                       e.stopPropagation()
                       removeItem(item.timestamp)
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-700 rounded"
+                    className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-luxury-700/50 rounded-lg transition-all"
                   >
-                    <Trash2 className="h-3 w-3 text-gray-500 hover:text-red-400" />
+                    <Trash2 className="h-3.5 w-3.5 text-champagne-500 hover:text-red-400" />
                   </button>
                 </div>
               </Card>

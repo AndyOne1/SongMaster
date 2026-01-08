@@ -363,31 +363,122 @@ app.post('/api/generate-artist', async (req, res) => {
   console.log('Artist generation request:', { input, model_name })
 
   try {
-    const result = await callOpenRouter(
-      model_name || 'anthropic/claude-sonnet-4.5',
-      [
-        {
-          role: 'system',
-          content: `You are an expert at creating unique fictional artists and bands. Generate 3 creative artist profiles based on user input.
+    // Parse input variables
+    let artistType = ''
+    let desiredStyle = ''
+
+    if (input) {
+      const artistTypeMatch = input.match(/Artist Type:\s*(.+?)(?:\n|$)/i)
+      const styleMatch = input.match(/Desired Style:\s*(.+?)(?:\n|$)/i)
+
+      artistType = artistTypeMatch ? artistTypeMatch[1].trim() : ''
+      desiredStyle = styleMatch ? styleMatch[1].trim() : ''
+    }
+
+    // Fetch system prompt from database or use fallback
+    let systemPrompt = await fetchSystemPrompt('artist_generation')
+
+    if (systemPrompt) {
+      // Replace placeholders with actual values
+      systemPrompt = systemPrompt
+        .replace('{artist_type}', artistType || 'Solo Artist')
+        .replace('{desired_style}', desiredStyle || 'Create an original style')
+    } else {
+      // Fallback prompt
+      systemPrompt = `You are an expert at creating unique fictional artists and bands. Generate 3 creative artist profiles based on the user input.
+
+Input Variables:
+- Artist Type: ${artistType || 'Solo Artist'}
+- Desired Style: ${desiredStyle || 'Create an original style'}
 
 Return a JSON object with this structure:
 {
-  "artists": [
+  "options": [
     {
-      "name": "Artist/Band Name",
-      "style_description": "Detailed description of their musical style",
-      "special_characteristics": "What makes them unique"
+      "artist_name": "Artist/Band Name",
+      "artist_type": "Type of artist (e.g., Solo Artist, Band, Duo)",
+      "tagline": "Brief catchy description of their style",
+      "origin_story": "Detailed backstory of how the artist formed",
+      "career_stage": "Career stage (e.g., Emerging, Breakthrough, Established, Legendary)",
+      "musical_dna": {
+        "core_genre": "Primary genre",
+        "signature_sound": "What makes them sonically distinctive",
+        "mood_and_emotion": "Emotional quality of their music",
+        "influence_sources": ["Key influences"]
+      },
+      "instrumentation": {
+        "primary_instruments": ["List of main instruments"],
+        "production_techniques": "Production approach",
+        "unique_sonic_elements": "Special sonic characteristics"
+      },
+      "vocal_identity": {
+        "vocal_type": "Type of vocals (e.g., Male Tenor, Female Mezzo-Soprano)",
+        "vocal_characteristics": "What makes their voice distinctive",
+        "vocal_approach": "How they use vocals in songs"
+      },
+      "lyrical_identity": {
+        "writing_approach": "How lyrics are written",
+        "thematic_preferences": "Common themes in lyrics",
+        "narrative_style": "Storytelling approach"
+      },
+      "references": {
+        "sounds_like": ["Similar artists/bands"],
+        "comparable_projects": "Comparable projects or albums",
+        "fusion_elements": "Genre fusion elements"
+      },
+      "suno_guidelines": {
+        "default_bpm": "Recommended tempo",
+        "key_signature": "Recommended key",
+        "duration_range": "Typical song length",
+        "structure_preference": "Preferred song structure",
+        "tags_and_keywords": ["Suno tags for generation"]
+      },
+      "brand_identity": {
+        "visual_aesthetic": "Visual style and imagery",
+        "brand_values": ["Core brand values"],
+        "image_presentation": "How they present themselves"
+      },
+      "agent_brief": "Detailed brief for the artist agent about their style and requirements",
+      "short_style_summary": "Brief 1-2 sentence summary of their musical style"
     }
   ]
 }
 
-Be creative and varied with each option.`
-        },
-        { role: 'user', content: input }
+Be creative and varied with each option. Ensure each artist feels unique and authentic.`
+    }
+
+    const result = await callOpenRouter(
+      model_name || 'anthropic/claude-sonnet-4.5',
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: input || `Artist Type: ${artistType}\nDesired Style: ${desiredStyle}` }
       ],
-      { maxTokens: 2000 }
+      { maxTokens: 3000 }
     )
-    res.json({ options: result.artists || result })
+
+    // Transform result to frontend format
+    const options = result.options || result.artists || []
+
+    const transformedOptions = options.map(option => ({
+      name: option.artist_name || option.name,
+      style_description: option.tagline || option.style_description,
+      special_characteristics: option.agent_brief || option.short_style_summary || option.special_characteristics,
+      artist_type: option.artist_type,
+      tagline: option.tagline,
+      origin_story: option.origin_story,
+      career_stage: option.career_stage,
+      musical_dna: option.musical_dna || {},
+      instrumentation: option.instrumentation || {},
+      vocal_identity: option.vocal_identity || {},
+      lyrical_identity: option.lyrical_identity || {},
+      references_data: option.references || {},
+      suno_guidelines: option.suno_guidelines || {},
+      brand_identity: option.brand_identity || {},
+      agent_brief: option.agent_brief,
+      short_style_summary: option.short_style_summary
+    }))
+
+    res.json({ options: transformedOptions })
   } catch (error) {
     console.error('Artist generation error:', error)
     res.status(500).json({ error: error.message || 'Failed to generate artists' })

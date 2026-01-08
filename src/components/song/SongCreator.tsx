@@ -99,8 +99,15 @@ export function SongCreator() {
   const loadArtist = async (id: string) => {
     const { data } = await supabase.from('artists').select('*').eq('id', id).single()
     if (data) {
-      setArtist(data as Artist)
-      setStyleDescription(data.style_description)
+      const artistData = data as Artist
+      setArtist(artistData)
+      setStyleDescription(artistData.style_description)
+
+      // Pre-fill defaults from suno_guidelines if available
+      if (artistData.suno_guidelines) {
+        // Guidelines available for agent reference during generation
+        // Can be parsed to extract style hints if needed
+      }
     }
   }
 
@@ -147,7 +154,11 @@ export function SongCreator() {
 
       // Build artist context
       const artistContext = artist
-        ? `Artist: ${artist.name}\nStyle: ${artist.style_description}\nCharacteristics: ${artist.special_characteristics}`
+        ? `Artist: ${artist.name}
+${artist.short_style_summary ? `Summary: ${artist.short_style_summary}` : ''}
+${artist.agent_brief ? `Agent Brief: ${artist.agent_brief}` : ''}
+Style: ${artist.style_description}
+${artist.special_characteristics ? `Characteristics: ${artist.special_characteristics}` : ''}`
         : ''
 
       // Call all agents in parallel
@@ -451,7 +462,6 @@ export function SongCreator() {
 
   const handleNewSong = () => {
     setStep('selection')
-    setShowAgentModal(true)
     setSongDescription('')
     setAgentResults({})
     setEvaluations({})
@@ -475,7 +485,17 @@ export function SongCreator() {
     <div className="mx-auto max-w-6xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-100">Create New Song</h1>
-        {artist && <p className="text-gray-500">for {artist.name}</p>}
+        {artist && (
+          <div className="flex items-center gap-2">
+            <p className="text-champagne-500">for</p>
+            <span className="text-amber-400 font-medium">{artist.name}</span>
+            {artist.artist_type && (
+              <span className="text-xs px-2 py-0.5 rounded bg-violet-500/10 text-violet-400">
+                {artist.artist_type}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Agent Selection Panel */}
