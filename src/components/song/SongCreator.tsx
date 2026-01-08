@@ -90,7 +90,7 @@ export function SongCreator() {
   }
 
   const handleGenerate = async () => {
-    if (!songId || selectedAgentIds.length === 0 || !selectedOrchestratorId) return
+    if (selectedAgentIds.length === 0 || !selectedOrchestratorId) return
 
     setStep('generating')
     setAgentResults({})
