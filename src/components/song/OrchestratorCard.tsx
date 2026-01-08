@@ -94,7 +94,8 @@ export function OrchestratorCard({
   onSave,
   onIterate,
   onNewSong,
-  winnerAnalysis
+  winnerAnalysis,
+  iterationCount
 }: OrchestratorCardProps) {
   const [showCustomInstruction, setShowCustomInstruction] = useState(false)
   const [customInstruction, setCustomInstruction] = useState('')
@@ -173,7 +174,7 @@ export function OrchestratorCard({
               className="w-full"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              {iterationCount > 0 ? `Iterate Again (#${iterationCount})` : 'Iterate on Song'}
+              {(iterationCount ?? 0) > 0 ? `Iterate Again (#${iterationCount})` : 'Iterate on Song'}
             </Button>
             <button
               onClick={() => setShowCustomInstruction(!showCustomInstruction)}

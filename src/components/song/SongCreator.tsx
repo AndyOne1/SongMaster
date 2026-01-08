@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Agent, Artist, DetailedEvaluation } from '../../types'
+import { IterationContext } from '../../types/song'
 import { AgentSelectionModal } from './AgentSelectionModal'
 import { AgentCard } from './AgentCard'
 import { OrchestratorCard } from './OrchestratorCard'
 import { SongDetailModal } from './SongDetailModal'
 import { SongDescriptionInputs } from './SongDescriptionInputs'
+import { SaveWarningDialog } from './SaveWarningDialog'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { supabase } from '../../services/supabase/client'
@@ -69,6 +71,11 @@ export function SongCreator() {
     completedCount?: number
     totalCount?: number
   }>({ phase: 'sending', message: 'Sending request...' })
+
+  // Iteration
+  const [iterationContext, setIterationContext] = useState<IterationContext | null>(null)
+  const [iterationCount, setIterationCount] = useState(0)
+  const [showSaveWarning, setShowSaveWarning] = useState(false)
 
   // Detail Modal
   const [detailModal, setDetailModal] = useState<{
@@ -258,10 +265,154 @@ export function SongCreator() {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleIterate = (_customInstruction?: string) => {
-    // TODO: Implement iteration
-    showToast('Iteration feature coming soon!', 'info')
+  const handleIterate = (customInstruction?: string) => {
+    const effectiveWinnerId = overrideAgentId || winnerAgentId
+    const winnerEvaluation = effectiveWinnerId ? evaluations[effectiveWinnerId] : undefined
+
+    if (!winnerEvaluation) {
+      showToast('No evaluation data available for iteration', 'error')
+      return
+    }
+
+    // Store the iteration context for when user confirms
+    const recs = winnerEvaluation.recommendations as any
+    setIterationContext({
+      evaluation: {
+        strengths: winnerEvaluation.strengths || [],
+        weaknesses: winnerEvaluation.weaknesses || [],
+        recommendations: {
+          critical_fixes: recs?.critical_fixes || [],
+          quick_wins: recs?.quick_wins || [],
+          depth_enhancements: recs?.depth_enhancements || [],
+          suno_optimization: recs?.suno_optimization || [],
+        },
+        scores: winnerEvaluation.scores,
+      },
+      original_request: songDescription,
+      original_style: styleDescription,
+      custom_instructions: customInstruction,
+      iteration_number: iterationCount + 1,
+    })
+
+    setShowSaveWarning(true)
+  }
+
+  const handleSaveAndIterate = async () => {
+    setShowSaveWarning(false)
+    await handleSaveSong()
+    await executeIteration()
+  }
+
+  const handleProceedWithoutSaving = () => {
+    setShowSaveWarning(false)
+    executeIteration()
+  }
+
+  const executeIteration = async () => {
+    if (!iterationContext) return
+
+    setOrchestratorStatus('waiting')
+    setEvaluations({})
+    setWinnerAgentId(null)
+    setWinnerReason('')
+    setWinnerAnalysis(null)
+    setOverrideAgentId(null)
+    setGenerationProgress({ phase: 'sending', message: 'Sending requests to AI agents...' })
+
+    try {
+      const newSongId = crypto.randomUUID()
+      const orchestrator = agents.find(a => a.id === selectedOrchestratorId)
+
+      // Call all agents in parallel with iteration context
+      let completedCount = 0
+      const totalAgents = selectedAgentIds.length
+      const generatePromises = selectedAgentIds.map(async (agentId) => {
+        setAgentStatuses(prev => ({ ...prev, [agentId]: 'generating' }))
+
+        try {
+          const response = await fetch(`${BACKEND_URL}/api/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              song_id: newSongId,
+              agents: [{ id: agentId }],
+              user_request: iterationContext.original_request,
+              user_style: iterationContext.original_style,
+              custom_instructions: iterationContext.custom_instructions,
+              iteration_context: iterationContext
+            })
+          })
+
+          if (!response.ok) throw new Error('Generation failed')
+
+          const data = await response.json()
+          completedCount++
+          setGenerationProgress({
+            phase: 'collecting',
+            message: `Collecting agent outputs...`,
+            completedCount,
+            totalCount: totalAgents
+          })
+          setAgentStatuses(prev => ({ ...prev, [agentId]: 'done' }))
+
+          if (data.results && data.results[agentId]) {
+            return { agentId, result: data.results[agentId] }
+          }
+        } catch (error) {
+          console.error(`Iteration failed for ${agentId}:`, error)
+          setAgentStatuses(prev => ({ ...prev, [agentId]: 'error' }))
+        }
+        return null
+      })
+
+      const results = await Promise.all(generatePromises)
+
+      // Collect results
+      const validResults: Record<string, SongResult> = {}
+      for (const result of results) {
+        if (result && result.agentId && result.result) {
+          validResults[result.agentId] = result.result
+        }
+      }
+      setAgentResults(validResults)
+
+      // Call orchestrator
+      if (Object.keys(validResults).length > 0 && orchestrator) {
+        setOrchestratorStatus('fetching')
+        setGenerationProgress({
+          phase: 'evaluating',
+          message: `Evaluating and scoring ${Object.keys(validResults).length} songs...`
+        })
+
+        const orchResponse = await fetch(`${BACKEND_URL}/api/orchestrate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            song_id: newSongId,
+            user_request: iterationContext.original_request,
+            user_style: iterationContext.original_style,
+            songs: validResults,
+            orchestrator_model_name: orchestrator.model_name
+          })
+        })
+
+        if (orchResponse.ok) {
+          const data = await orchResponse.json()
+          setEvaluations(data.evaluations || {})
+          setWinnerAgentId(data.winner_agent_id)
+          setWinnerReason(data.winner_reason || '')
+          setWinnerAnalysis(data.winner_analysis || null)
+        }
+
+        setOrchestratorStatus('complete')
+        setGenerationProgress({ phase: 'complete', message: 'Iteration complete!' })
+      }
+
+      setIterationCount(prev => prev + 1)
+    } catch (error) {
+      console.error('Iteration failed:', error)
+      showToast('Iteration failed. Please try again.', 'error')
+    }
   }
 
   const handleNewSong = () => {
@@ -379,6 +530,7 @@ export function SongCreator() {
                   onIterate={handleIterate}
                   onNewSong={handleNewSong}
                   winnerAnalysis={winnerAnalysis}
+                  iterationCount={iterationCount}
                 />
               </div>
             )}
@@ -444,6 +596,14 @@ export function SongCreator() {
           winnerAnalysis={winnerId === detailModal.agentId ? (winnerAnalysis || undefined) : undefined}
         />
       )}
+
+      {/* Save Warning Dialog */}
+      <SaveWarningDialog
+        isOpen={showSaveWarning}
+        onSaveAndContinue={handleSaveAndIterate}
+        onProceedWithoutSaving={handleProceedWithoutSaving}
+        onCancel={() => setShowSaveWarning(false)}
+      />
     </div>
   )
 }
