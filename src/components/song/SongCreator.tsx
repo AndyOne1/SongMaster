@@ -63,6 +63,12 @@ export function SongCreator() {
     best_for?: string
   } | null>(null)
   const [overrideAgentId, setOverrideAgentId] = useState<string | null>(null)
+  const [generationProgress, setGenerationProgress] = useState<{
+    phase: 'sending' | 'generating' | 'collecting' | 'evaluating' | 'complete'
+    message: string
+    completedCount?: number
+    totalCount?: number
+  }>({ phase: 'sending', message: 'Sending request...' })
 
   // Detail Modal
   const [detailModal, setDetailModal] = useState<{
@@ -109,6 +115,7 @@ export function SongCreator() {
     setWinnerReason('')
     setWinnerAnalysis(null)
     setOverrideAgentId(null)
+    setGenerationProgress({ phase: 'sending', message: 'Sending requests to AI agents...' })
 
     try {
       // Generate song_id for tracking
@@ -117,6 +124,7 @@ export function SongCreator() {
       // Get selected agents
       const selectedAgents = agents.filter(a => selectedAgentIds.includes(a.id))
       const orchestrator = agents.find(a => a.id === selectedOrchestratorId)
+      const totalAgents = selectedAgents.length
 
       // Build artist context
       const artistContext = artist
@@ -124,6 +132,7 @@ export function SongCreator() {
         : ''
 
       // Call all agents in parallel
+      let completedCount = 0
       const generatePromises = selectedAgents.map(async (agent) => {
         setAgentStatuses(prev => ({ ...prev, [agent.id]: 'generating' }))
 
@@ -143,6 +152,13 @@ export function SongCreator() {
           if (!response.ok) throw new Error('Generation failed')
 
           const data = await response.json()
+          completedCount++
+          setGenerationProgress({
+            phase: 'collecting',
+            message: `Collecting agent outputs...`,
+            completedCount,
+            totalCount: totalAgents
+          })
           setAgentStatuses(prev => ({ ...prev, [agent.id]: 'done' }))
 
           // Track failed agents from response
@@ -155,6 +171,7 @@ export function SongCreator() {
           }
         } catch (error) {
           console.error(`Generation failed for ${agent.id}:`, error)
+          completedCount++
           setAgentStatuses(prev => ({ ...prev, [agent.id]: 'error' }))
         }
         return null
@@ -174,6 +191,10 @@ export function SongCreator() {
       // Call orchestrator if we have results
       if (Object.keys(validResults).length > 0 && orchestrator) {
         setOrchestratorStatus('fetching')
+        setGenerationProgress({
+          phase: 'evaluating',
+          message: `Evaluating and scoring ${Object.keys(validResults).length} songs...`
+        })
 
         const orchResponse = await fetch(`${BACKEND_URL}/api/orchestrate`, {
           method: 'POST',
@@ -196,6 +217,9 @@ export function SongCreator() {
         }
 
         setOrchestratorStatus('complete')
+        setGenerationProgress({ phase: 'complete', message: 'Complete!' })
+      } else {
+        setGenerationProgress({ phase: 'complete', message: 'Complete!' })
       }
 
       setStep('results')
@@ -275,8 +299,34 @@ export function SongCreator() {
       {step === 'generating' && (
         <Card className="p-12 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-200 mb-2">Loading your Team...</h2>
-          <p className="text-gray-500">Agents are working on your song</p>
+          <h2 className="text-xl font-semibold text-gray-200 mb-2">
+            {generationProgress.message}
+          </h2>
+
+          {/* Progress bar for collecting */}
+          {generationProgress.phase === 'collecting' && generationProgress.totalCount && (
+            <div className="max-w-xs mx-auto">
+              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <span>Progress</span>
+                <span>{generationProgress.completedCount}/{generationProgress.totalCount} agents</span>
+              </div>
+              <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary-500 transition-all duration-500"
+                  style={{
+                    width: `${((generationProgress.completedCount || 0) / generationProgress.totalCount) * 100}%`
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Spinner dots animation */}
+          <div className="flex justify-center gap-1 mt-4">
+            <span className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
         </Card>
       )}
 

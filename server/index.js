@@ -72,24 +72,56 @@ async function callOpenRouter(model, messages, options = {}) {
   } catch (parseError) {
     // Try to salvage incomplete JSON by finding the last complete object
     console.log(`[openrouter] JSON parse error for ${model}, trying to salvage...`)
-    console.log(`[openrouter] Raw content (first 500 chars):`, content.substring(0, 500))
+    console.log(`[openrouter] Raw content length: ${content.length} chars`)
 
-    // Try to find and parse just the lyrics (often the longest field)
-    const lyricsMatch = content.match(/"lyrics"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/)
-    if (lyricsMatch) {
-      const nameMatch = content.match(/"name"\s*:\s*"([^"]*)"/)
-      const styleMatch = content.match(/"style"\s*:\s*"([^"]*)"/)
-      const styleDescMatch = content.match(/"style_description"\s*:\s*"([^"]*)"/)
+    // For song generation: extract name/style/lyrics
+    if (options.extractFields) {
+      const lyricsMatch = content.match(/"lyrics"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/)
+      if (lyricsMatch) {
+        const nameMatch = content.match(/"name"\s*:\s*"([^"]*)"/)
+        const styleMatch = content.match(/"style"\s*:\s*"([^"]*)"/)
+        const styleDescMatch = content.match(/"style_description"\s*:\s*"([^"]*)"/)
 
-      return {
-        name: nameMatch ? nameMatch[1] : 'Untitled',
-        style: styleMatch ? styleMatch[1] : styleDescMatch ? styleDescMatch[1] : '',
-        lyrics: lyricsMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+        return {
+          name: nameMatch ? nameMatch[1] : 'Untitled',
+          style: styleMatch ? styleMatch[1] : styleDescMatch ? styleDescMatch[1] : '',
+          lyrics: lyricsMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+        }
+      }
+    }
+
+    // For orchestration: try to complete the JSON manually
+    if (!options.extractFields && content.includes('"evaluations"')) {
+      // Try to fix common truncation issues
+      let fixed = content
+
+      // Close any unclosed arrays/objects at the end
+      const openBraces = (fixed.match(/\{/g) || []).length
+      const closeBraces = (fixed.match(/\}/g) || []).length
+      const openBrackets = (fixed.match(/\[/g) || []).length
+      const closeBrackets = (fixed.match(/\]/g) || []).length
+
+      for (let i = 0; i < openBraces - closeBraces; i++) fixed += '\n}'
+      for (let i = 0; i < openBrackets - closeBrackets; i++) fixed += '\n]'
+
+      // Close any unclosed strings (very common in truncation)
+      if (fixed.trim().endsWith(',') || fixed.trim().endsWith('":') || fixed.trim().endsWith(':')) {
+        // Try to find the last complete field and close properly
+        fixed = fixed.replace(/,\s*["\w]+:\s*[^"\}\]]*$/, '')
+        fixed += '\n  }\n}'
+      }
+
+      try {
+        parsed = JSON.parse(fixed)
+        console.log(`[openrouter] Successfully salvaged JSON with ${Object.keys(parsed.evaluations || {}).length} evaluations`)
+        return parsed
+      } catch (secondError) {
+        console.log(`[openrouter] Could not salvage orchestrator JSON:`, secondError.message)
       }
     }
 
     // If we can't salvage, throw the original error
-    throw new Error(`JSON parse error: ${parseError.message}. Raw: ${content.substring(0, 100)}...`)
+    throw new Error(`JSON parse error: ${parseError.message}. Raw: ${content.substring(0, 200)}...`)
   }
 
   // For generate endpoint: extract structured fields
