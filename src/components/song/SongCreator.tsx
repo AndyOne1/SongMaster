@@ -184,7 +184,8 @@ Return valid JSON only.`
             song_id: newSongId,
             user_request: songDescription,
             user_style: styleDescription,
-            songs: validResults
+            songs: validResults,
+            orchestrator_model_name: orchestrator.model_name
           })
         })
 

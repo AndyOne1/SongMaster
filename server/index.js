@@ -142,11 +142,14 @@ Be creative and varied with each option.`
 
 // Orchestrate endpoint (evaluate and score songs with structured output)
 app.post('/api/orchestrate', async (req, res) => {
-  const { song_id, user_request, user_style, songs } = req.body
+  const { song_id, user_request, user_style, songs, orchestrator_model_name } = req.body
 
   if (!song_id || !songs || Object.keys(songs).length === 0) {
     return res.status(400).json({ error: 'song_id and songs required' })
   }
+
+  // Use provided model or fall back to environment variable or default
+  const model = orchestrator_model_name || process.env.ORCHESTRATOR_MODEL || 'gpt-4o'
 
   try {
     // Build songs summary for evaluation
@@ -158,8 +161,7 @@ Style: ${song.style || song.style_description || 'Unknown'}
 Lyrics: ${lyrics.substring(0, 500)}${lyrics.length > 500 ? '...' : ''}`
     }).join('\n\n---\n\n')
 
-    const result = await callOpenRouter(
-      process.env.ORCHESTRATOR_MODEL || 'anthropic/claude-sonnet-4-20250514',
+    const result = await callOpenRouter(model,
       [
         {
           role: 'system',
